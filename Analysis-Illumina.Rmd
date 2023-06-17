@@ -89,177 +89,85 @@ source("YM_fusetoplayer.R")             # Fuse plots into an animated player
 source("YM_extrafunctions.R")           # Additional helper functions
            
 
+# Make supplementary figures in grey values for cheaper printing. For paper make = false
+BW = TRUE
+```
 
+## Colours and labels
+```{r labels and colours, message=FALSE, warning=FALSE}
+# Universal colours for the project
+source("YM_colours.R")
 
+# Define labels for various variables
+donor.labs <- c("Donor 1", "Donor 2", "Donor 3", "Donor 4", "Donor 5", "Donor 6")
+names(donor.labs) <- c("1", "2", "3", "4", "5", "6")
 
+PD_Colon.labs <- c("Faecal sample", "Proximal colon", "Distal colon")
+names(PD_Colon.labs) <- c("FS", "P", "D")
 
-  
+PD_Colon.labsPC <- c("Faecal sample", "Proximal colon", "Distal colon")
+names(PD_Colon.labsPC) <- c("FS", "P", "D")
 
-", "Donor 3", "Donor 4", "Donor 5", "Donor 6")
-names(donor.labs) <- c("1", "2", "3", "4","5","6")
-saveplots <- function () setwd("/Projects2/Yorick/Rstudio_projects/Task1.2TransitSHIME/Data/Results/Plots") #save plots
-RDP <- T
+VFA.labs <- c("Acetate", "Propionate", "Butyrate", "Total")
+names(VFA.labs) <- c("Acetate", "Propionate", "Butyrate", "total_SCFA")
+
+donor.labs <- c("Donor 1 - Short", "Donor 2 - Short", "Donor 3 - Medium", "Donor 4 - Long", "Donor 5 - Long", "Donor 6 - Medium")
+names(donor.labs) <- c("1", "2", "3", "4", "5", "6")
+
+Vessel.labs <- c("Faecal sample", "Proximal colon", "Distal colon")
+names(Vessel.labs) <- c("FS", "P", "D")
+
+Transit.labs <- c("Short transit", "Medium transit", "Long transit")
+names(Transit.labs) <- c("ST", "MT", "LT")
+
+donor.labs <- c("Donor 1", "Donor 2", "Donor 3", "Donor 4", "Donor 5", "Donor 6")
+names(donor.labs) <- c("1", "2", "3", "4", "5", "6")
+
+# Function to set the working directory for saving plots
+saveplots <- function() setwd("/Projects2/Yorick/Rstudio_projects/Task1.2TransitSHIME/Data/Results/Plots")
+
+# Set variables RDP and otu
+RDP <- TRUE
 otu <- FALSE
 ```
 
-
-```{r colour quest, fig.height=10, fig.width=16, include=FALSE}
-library(ggsci)
-library(scico)
-# ggsci
-getPalette = colorRampPalette(pal_npg("nrc", alpha = 0.7)(10)); show_col(getPalette(20));getPalette(20)
-getPalette = colorRampPalette(pal_startrek("uniform", alpha = 0.7)(7)); show_col(getPalette(26));getPalette(26)
-getPalette = colorRampPalette(pal_rickandmorty("schwifty", alpha = 0.7)(12)); show_col(getPalette(26));getPalette(26)
-getPalette = colorRampPalette(pal_tron("legacy", alpha = 0.7)(7)); show_col(getPalette(7));getPalette(7)
-colors1 <- c("#FAFD7C", "#C5AD52", "#905E29", "#634132", "#3A374F", "#41557D",
-              "#82A3C1", "#BCD9ED", "#DAA1AD", "#F8696C", "#B7684F", "#6D6C36", 
-              "#7B6A5C","#BD65A7", "#E769BF", "#E77E7D", "#E89544", "#F0B965", 
-              "#F8DD85", "#DBE7AB", "#B6ECD3", "#A0D2C5",  "#8C856E", "#7AA6AD",
-               "#69C8EC","#97A088"); show_col(colors1)
-getPalette = colorRampPalette(brewer.pal(11, "Paired")); show_col(getPalette(26));getPalette(26)
-getPalette = colorRampPalette(brewer.pal(9, "Pastel1")); show_col(getPalette(26));getPalette(26)
-getPalette = colorRampPalette(brewer.pal(9, "Blues")); show_col(getPalette(26));getPalette(26)
-x <- getPalette(26) 
-  colors <- c("#7FC97F", "#66A61E","#1B9E77", "#6D6D36", "#B2DF8A", "#FDC086", 
-              "#1F78B4", "#A6CEE3","#7570B3",  "#3383BE","#BF5B17",  "#A6761D",
-              "#E7298A", "#E31A1C",  "#B12934",  "#F0027F",  "#CC0C00","#BEAED4",
-               "#FB9A99",  "#FDBF6F", "#FF7F00", "#CAB2D6", "#FFFF99","#E6AB02",
-              "#6A3D9A","#666666"); show_col(colors)
-  
-  colors1 <- c("#DBE7AB","#7FC97F", "#66A61E","#1B9E77", "#BD65A7", "#E769BF", 
-               "#B6ECD3","#BCD9ED", "#82A3C1","#69C8EC", "#41557D","#3A374F",  
-               "#DAA1AD","#E77E7D", "#F8696C", "#B7684F", "#CC0C00", "#7D54A6",
-               "#C5AD52", "#A383BE","#E89544", "#F0B965", "#634132","#FAFD7C", 
-               "#97A088", "#7B6A5C"); show_col(colors1)
-  
-   desired = c("Acidaminococcus"="#DA5724",  "Akkermansia"="#94cfd5", "Alistipes"="#DAA1AD",
-  "Bacteroides"="#3F4921", "Bifidobacterium"="#CBD588", "Bilophila"="#5F7FC7", "Blautia"="#673770", 
-  "Cloacibacillus" = "#D7C1B1", "Dialister"= "#FAFD7C","Enterobacteriaceae"="#38333E", 
-  "Clostridium_XlVa" = "#689030", "Eisenbergiella" = "#508578", "Lachnospiraceae"="#CD9BCD",
-  "Megamonas" ="#D14285","Megasphaera"= "#6DDE88", "Mitsuokella" ="#652926", "Parabacteroides"="#7FDCC0",
-  "Phascolarctobacterium"="#5E738F", "Prevotella"= "#C84248", "Pseudomonas"="#D1A33D", "Roseburia"="#8A7C64", 
-  "Ruminococcus" = "#AD6F3B", "Ruminococcaceae" = "#CC0C00", "Sutterella" = "#046582", "Veillonella" = "#F8698C", 
-  "Other"="#bfbfbf")
-   
-   colors = 21
-  par(mfrow=c(2,2));show_col(desired); show_col(desired2); show_col(colors1); 
-  getPalette = colorRampPalette(pal_rickandmorty("schwifty", alpha = 0.7)(12)); show_col(getPalette(colors));getPalette(colors)
-  getPalette = colorRampPalette(brewer.pal(9, "Pastel2")); show_col(getPalette(colors));getPalette(colors)
-getPalette = colorRampPalette(brewer.pal(11, "Paired")); show_col(getPalette(colors));getPalette(colors)
-# getPalette = colorRampPalette(pal_npg("nrc", alpha = 0.7)(10)); show_col(getPalette(26));getPalette(26)
-# scico_palette_show()
-show_col(scico(26, palette = 'lapaz'))
-qual_col_pals <- brewer.pal.info[brewer.pal.info$category == "qual", ]
-col_vector <- unlist(mapply(brewer.pal, qual_col_pals$maxcolors, rownames(qual_col_pals)))
-```
-
-
-# DNA database matches
-## BLAST FASTA file
-```{r}
-library(rBLAST)
-library(Biostrings)
-setwd("/media/projects2/yorick/Rstudio_projects/Task1.2_Transittime/Data/BLAST")
-new_db = F
-## download the 16S Microbial data base from NCBI
-if(new_db == T){ 
-download.file("https://ftp.ncbi.nlm.nih.gov/blast/db/16S_ribosomal_RNA.tar.gz", "16S_ribosomal_RNA.tar.gz")
-untar("16S_ribosomal_RNA.tar.gz", exdir="/media/projects2/yorick/Rstudio_projects/Task1.2_Transittime/Data/BLAST/16SMicrobialDB")
-bl <- blast(db="/media/projects2/yorick/Rstudio_projects/Task1.2_Transittime/Data/BLAST/16SMicrobialDB/16S_ribosomal_RNA", type = "blastn")
-}else{
-# Old data base
-setwd("/media/projects2/yorick/Rstudio_projects/Task1.2_Transittime/Data/BLAST")
-download.file("https://ftp.ncbi.nlm.nih.gov/blast/db/v4/16SMicrobial_v4.tar.gz", "16SMicrobial_v4.tar.gz", mode='w')
-untar("16SMicrobial_v4.tar.gz", exdir="/media/projects2/yorick/Rstudio_projects/Task1.2_Transittime/Data/BLAST/16SMicrobialDB")
-bl <- blast(db="/media/projects2/yorick/Rstudio_projects/Task1.2_Transittime/Data/BLAST/16SMicrobialDB/16SMicrobial", type = "blastn")
-}
-## load test data 
-setwd("/media/projects2/yorick/Rstudio_projects/Task1.2_Transittime/Data/BLAST")
-seq <- readRNAStringSet(system.file("OTU_fasta_seqmatch.fasta",	package="rBLAST"))
-seq
-names(seq)
-# ## load a BLAST database (replace db with the location + name of the BLAST DB)
-print(bl, info=TRUE)
-## query a sequence using BLAST
-cl <- predict(bl, seq[3,])
-cl[1:5,]
-```
-
-## Interprete RDP seqmatch results
-```{r RDP seqmatch}
-library(stringr)
-RDPseqmatch <- read.csv2("RDPseqmatch_results.csv", header = TRUE, sep = ";")
-# Split sequence name and remove (T) from the string
-RDPseqmatch[c('Species', 'code1', "code2")] <- str_split_fixed(RDPseqmatch$sequence.name, ';', 3)
-RDPseqmatch$Species <- str_remove(RDPseqmatch$Species, "(T)")
-RDPseqmatch$Species <- gsub( "(", "",RDPseqmatch$Species, fixed = TRUE)
-RDPseqmatch$Species <- gsub( ")", "",RDPseqmatch$Species, fixed = TRUE)
-RDPseqmatch$OTU <- str_remove(RDPseqmatch$query.name, "OTU"); RDPseqmatch$OTU <- as.numeric(RDPseqmatch$OTU)
-# Rename columns
-colnames(RDPseqmatch)[colnames(RDPseqmatch) == "X_1"] <- "Domain" 
-colnames(RDPseqmatch)[colnames(RDPseqmatch) == "X_3"] <- "Phylum" 
-colnames(RDPseqmatch)[colnames(RDPseqmatch) == "X_5"] <- "Class"
-colnames(RDPseqmatch)[colnames(RDPseqmatch) == "X_7"] <- "Order" 
-colnames(RDPseqmatch)[colnames(RDPseqmatch) == "X_9"] <- "Family" 
-colnames(RDPseqmatch)[colnames(RDPseqmatch) == "X_11"] <- "Genus" 
-# Select cols you want
-RDPseqmatch <- subset(RDPseqmatch, select = c("OTU","Species", "S_ab.score", "unique.common.oligomers","Domain",
-                                    "Phylum", "Class", "Order", "Family", "Genus",  "code1", "code2", "query.name"))
-# Remove NA
-RDPseqmatch <- na.omit(RDPseqmatch) 
-# Take top x Species level sequences
-uniqueOTU <- sort(unique(RDPseqmatch$OTU)); top = 2
-RDPcondensed <- data.frame()
-for(i in uniqueOTU){
-  df <- subset(RDPseqmatch, OTU == i); df3 <- data.frame()
-  for(x in c(1:top)){
-    max = max(df$S_ab.score)
-    df2 <- subset(df, S_ab.score == max) 
-    df3 <- rbind(df3, df2)
-    df <- subset(df, S_ab.score != max)
-  }
-  df3 <- df3[!duplicated(df3[c('Species')]), ]
-  RDPcondensed <- rbind(RDPcondensed,df3)
-}
-RDPcondensed$S_ab.score <- RDPcondensed$S_ab.score/1000
-RDPcondensed$combo <- paste0(RDPcondensed$OTU,RDPcondensed$Species)
-# write.csv2(RDPcondensed, "RDPseqmatch_condensed_all.csv")
-write.csv2(RDPcondensed, "RDPseqmatch_condensed.csv")
-```
-
-
-
-# RUN ALL FIRST data manipulation 
-## Load data and create phyloseq object
+# Load data and create phyloseq object
 ```{r Create and manipulate phyloseq objects, fig.height=20, fig.width=40, message=F}
-# Load source data 
-if(RDP == TRUE) {
+
+# Load source data
+if (RDP == TRUE) {
   otutaxonomy <- read.table("fasta_for_RDPclassifier.wang.taxonomy")
-  # herschikken van RDP data <-- gekopieerde splittax2 functie
-    x <- otutaxonomy; y <- stri_split_regex(x$V2,"\\(|\\;", simplify = TRUE)
-    # add the first column with the id's of the sample to the dateframe with the taxonomy
-    x <- cbind(x[,1],as.data.frame(y))
-    # remove the empty columns
-    x <- x[,colSums(x != "") != 0] 
-    # silva only goes till genus level so we need to add empty columns in that case, since it will try to give names in 
-    # next step and name vector will be to long if not adapted
-    if (ncol(x)==13){x <- mutate(x,x14="NA",x15="NA")}
-    # add column names
-    colnames(x) <-c("id", "Kingdom", "prob_k", "Phylum", "prob_p", "Class", "prob_c", "Order",
-                    "prob_o","Family","prob_f","Genus","prob_g","Species","prob_s")
-    taxtable <- x; taxtable$ID2 <- taxtable$id; taxtable$ID2<- gsub("OTU", "", taxtable$ID2) 
-    taxtable2 <- subset(taxtable, ID2 == ""); taxtable2$ID2 <- c(32,33,34,35,36,37,38)
-    taxtable <- subset(taxtable, ID2 != ""); taxtable <- rbind(taxtable2, taxtable)
-    taxtable$ID2 <- as.numeric(taxtable$ID2); test <- taxtable[duplicated(taxtable$ID2),]
-    taxtable <- arrange(taxtable,ID2)
-    taxtable$ID2 <- str_pad(taxtable$ID2, 5, pad = "0")
-    taxtable$ID2 <- paste0("Otu", taxtable$ID2, sep = "")  # Add zeros in front Otu number
-    row.names(taxtable) <- taxtable$ID2
-    taxtable <- subset(taxtable, select = c(Kingdom,Phylum,Class,Order,Family,Genus)); rm(x, y)
-} else {
-  taxfile = "stabilityfile.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.pick.opti_mcc.0.03.cons.taxonomy"
-  test <- as.data.frame(tax_table(import_mothur(mothur_constaxonomy_file = taxfile)))
+  
+  # Rearrange RDP data
+  x <- otutaxonomy
+  y <- stri_split_regex(x$V2, "\\(|\\;", simplify = TRUE)
+  x <- cbind(x[, 1], as.data.frame(y))
+  x <- x[, colSums(x != "") != 0] 
+  if (ncol(x) == 13) {
+    x <- mutate(x, x14 = "NA", x15 = "NA")
   }
+  colnames(x) <- c("id", "Kingdom", "prob_k", "Phylum", "prob_p", "Class", "prob_c", "Order",
+                   "prob_o", "Family", "prob_f", "Genus", "prob_g", "Species", "prob_s")
+  taxtable <- x
+  taxtable$ID2 <- taxtable$id
+  taxtable$ID2 <- gsub("OTU", "", taxtable$ID2) 
+  taxtable2 <- subset(taxtable, ID2 == "")
+  taxtable2$ID2 <- c(32, 33, 34, 35, 36, 37, 38)
+  taxtable <- subset(taxtable, ID2 != "")
+  taxtable <- rbind(taxtable2, taxtable)
+  taxtable$ID2 <- as.numeric(taxtable$ID2)
+  test <- taxtable[duplicated(taxtable$ID2), ]
+  taxtable <- arrange(taxtable, ID2)
+  taxtable$ID2 <- str_pad(taxtable$ID2, 5, pad = "0")
+  taxtable$ID2 <- paste0("Otu", taxtable$ID2, sep = "")
+  row.names(taxtable) <- taxtable$ID2
+  taxtable <- subset(taxtable, select = c(Kingdom, Phylum, Class, Order, Family, Genus))
+  rm(x, y)
+} else {
+  taxfile <- "stabilityfile.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.pick.opti_mcc.0.03.cons.taxonomy"
+  test <- as.data.frame(tax_table(import_mothur(mothur_constaxonomy_file = taxfile)))
+}
+
 sharedfile = "stabilityfile.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.pick.opti_mcc.shared"
 
 # Load sampledata and alter it
@@ -274,7 +182,7 @@ sampledata$Donor <- as.ordered(factor(sampledata$Donor, levels=c("1","2","3","4"
 sampledata <- cbind(sampledata, `Interaction`= interaction(sampledata$Donor, sampledata$Transit, sep=":"))
 sampledata$Day <- as.numeric(sampledata$Day)
 
- ## Merge fcm counts with sampledata
+ ## Merge flow cytometry counts with sampledata
 if(exists("by_nr") == F){by_nr <- read.csv("cellcounts.csv")}
  Countdata <- by_nr
  sampledata <-  merge(sampledata, by_nr[, c("Nr", "SDtot", "meantot")], by.x = "Samplenumber",by.y="Nr", all.x=TRUE)
@@ -282,31 +190,30 @@ if(exists("by_nr") == F){by_nr <- read.csv("cellcounts.csv")}
  ## Assign rownames to be Sample ID's
  row.names(sampledata) <- sampledata$Samplenumber
  
-# Import mothur data and
-if(RDP == TRUE){
-  mothur_data <- import_mothur(mothur_shared_file = sharedfile
-                             # mothur_constaxonomy_file = taxfile
-                             )
+# Import mothur data
+if (RDP == TRUE) {
+  mothur_data <- import_mothur(mothur_shared_file = sharedfile)
   taxtable <- tax_table(as.matrix(taxtable))
   mothur_data <- merge_phyloseq(mothur_data, taxtable)
-  
-} else{
-  mothur_data <- import_mothur(mothur_shared_file = sharedfile,
-                             mothur_constaxonomy_file = taxfile)
+} else {
+  mothur_data <- import_mothur(mothur_shared_file = sharedfile, mothur_constaxonomy_file = taxfile)
   xxx <- as.data.frame(tax_table(mothur_data))
   # Rename the columns to reflect tax
   colnames(tax_table(mothur_data)) <- c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus")
 }
-# Check if the samples are correct 
-sample_names(mothur_data); x <- as.data.frame(sample_names(mothur_data))
-# Rename samplenames of long transit in donors 3 and 6: 279-288 -> 281 - 290 and 379-388 -> 381 - 390
- txx <- as.data.frame(phyloseq::otu_table(mothur_data), stringsAsFactors = F)
- colnames(txx)[colnames(txx) %in% c("279", "280", "281", "282", "283", "284", "285", "286", "287", "288",
-                                    "379", "380", "381", "382", "383", "384", "385", "386", "387", 
-                                    "388")]  <- c("281", "282", "283", "284", "285", "286", "287", "288", 
-                       "289", "290", "381", "382",	"383", "384", "385", "386", "387", "388", "389", "390")
- otu_table(mothur_data) <- otu_table(as.matrix(txx), taxa_are_rows = TRUE)
- sample_names(mothur_data)
+
+# Check if the samples are correct
+sample_names(mothur_data)
+x <- as.data.frame(sample_names(mothur_data))
+
+# Rename sample names of long transit in donors 3 and 6: 279-288 -> 281-290 and 379-388 -> 381-390
+txx <- as.data.frame(phyloseq::otu_table(mothur_data), stringsAsFactors = FALSE)
+colnames(txx)[colnames(txx) %in% c("279", "280", "281", "282", "283", "284", "285", "286", "287", "288",
+                                    "379", "380", "381", "382", "383", "384", "385", "386", "387", "388")]  <- c("281", 
+"282", "283", "284", "285", "286", "287", "288", "289", "290", "381", "382", "383", "384", "385", "386", "387", "388", "389", "390")
+otu_table(mothur_data) <- otu_table(as.matrix(txx), taxa_are_rows = TRUE)
+sample_names(mothur_data)
+
 
 # Merge mothurdata object with sample metadata
 moth_merge <- merge_phyloseq(mothur_data,sample_data(sampledata))
@@ -370,11 +277,10 @@ genusotutable_copynr_corrected2 <- otu_table(genusotutable_copynr_corrected, tax
 otu_table(phylobj.otu) <- genusotutable_copynr_corrected2
 sample_names(genusotutable_copynr_corrected2)
 
-## Rename certain genera in taxonomy of phyloseq 
+## Rename and remove "unclassified" from genus level in taxonomy of phyloseq 
 tax.tab <- data.frame(tax_table(phylobj.otu))
 tax.tab$Genus <- as.character(tax.tab$Genus)
 tax.tab$Genus[tax.tab$Genus == "Lachnospiraceae_ge"] <- "Lachnospiraceae"
-tax.tab$Genus[tax.tab$Genus == "Ruminococcus2"] <- "Ruminococcus"
 tax.tab$Genus[tax.tab$Genus == "Enterobacteriaceae_unclassified"] <- "Enterobacteriaceae"
 tax.tab$Genus[tax.tab$Genus == "Lachnospiraceae_unclassified"] <- "Lachnospiraceae"
 tax.tab$Genus[tax.tab$Genus == "Ruminococcaceae_unclassified"] <- "Ruminococcaceae"
@@ -449,8 +355,8 @@ otu.tab$order <- 1:nrow(otu.tab); otu.tab <- otu.tab %>% select(order, everythin
  RDPclass_QMP_merge <- mutate(RDPclass_QMP_merge,copynr=Seqnr/Seqnr_corrected)
  RDPclass_QMP_merge$copynr[is.na(RDPclass_QMP_merge$copynr)] <- 1 # if the copy number is unknown take copy number 1 
  RDPclass_QMP_merge <- RDPclass_QMP_merge[,-c(3:6)]
- ## Run own script to change non corresponding taxa from RDP database
- otu.tab <- Change_taxaOTU(OTU.df = otu.tab, RDP = TRUE) 
+
+ ## Rename and remove "unclassified" from genus level in taxonomy of phyloseq 
  RDPclass_QMP_merge$Taxa <- gsub("unclassified_(.+)","\\1_unclassified",RDPclass_QMP_merge$Taxa)# old, new
  RDPclass_QMP_merge$Taxa <- gsub("Clostridium XlVa","Clostridium_XlVa",RDPclass_QMP_merge$Taxa)
  RDPclass_QMP_merge$Taxa <- gsub("\"Bacteroidetes\"_unclassified","Bacteroidetes_unclassified",RDPclass_QMP_merge$Taxa)
@@ -458,7 +364,8 @@ otu.tab$order <- 1:nrow(otu.tab); otu.tab <- otu.tab %>% select(order, everythin
  RDPclass_QMP_merge$Taxa <- gsub("Clostridium IV","Clostridium_IV",RDPclass_QMP_merge$Taxa)
  RDPclass_QMP_merge$Taxa <- gsub("Clostridium XlVb","Clostridium_XlVb",RDPclass_QMP_merge$Taxa)
  RDPclass_QMP_merge$Taxa <- gsub("\"Bacteroidales\"_unclassified","Bacteroidales_unclassified",RDPclass_QMP_merge$Taxa)
- RDPclass_QMP_merge <- Change_taxaRDP(RDP.df = RDPclass_QMP_merge, RDP = TRUE)
+ 
+
  ## Combine the copy number correction factor with the genus table 
  otu.tab$Genus%in%RDPclass_QMP_merge$Taxa; test <- cbind(data.frame(x = otu.tab$Genus%in%RDPclass_QMP_merge$Taxa),otu.tab)
  if("FALSE" %in% test$x){stop("Taxa in OTU table are not matching RDP set!")}; rm(test)
@@ -470,11 +377,9 @@ otu.tab$order <- 1:nrow(otu.tab); otu.tab <- otu.tab %>% select(order, everythin
  otu_table(phylobj.agg) <- genusotutable_copynr_corrected2
  sample_names(genusotutable_copynr_corrected2)
  
- ## Rename certain genera in taxonomy of phyloseq 
+ ## Rename and remove "unclassified" from genus level in taxonomy of phyloseq 
  tax.tab <- data.frame(tax_table(phylobj.agg))
  tax.tab$Genus <- as.character(tax.tab$Genus)
- tax.tab$Genus[tax.tab$Genus == "Lachnospiraceae_ge"] <- "Ruminococcus"
- tax.tab$Genus[tax.tab$Genus == "Ruminococcus2"] <- "Ruminococcus"
  tax.tab$Genus[tax.tab$Genus == "Enterobacteriaceae_unclassified"] <- "Enterobacteriaceae"
  tax.tab$Genus[tax.tab$Genus == "Lachnospiraceae_unclassified"] <- "Lachnospiraceae"
  tax.tab$Genus[tax.tab$Genus == "Ruminococcaceae_unclassified"] <- "Ruminococcaceae"
