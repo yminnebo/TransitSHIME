@@ -1,5 +1,5 @@
 ---
-title: "Good_Illumina"
+title: "Illumina"
 output: html_document
 ---
 
@@ -27,127 +27,75 @@ knitr::opts_chunk$set(#eval = TRUE,
 
 ## Load the packages
 ```{r load packages, message=FALSE, warning=FALSE, results='hide'}
-setwd("/Projects2/Yorick/Rstudio_projects/Task1.2TransitSHIME/TransitSHIME")
-# Function to check whether package is installed
-  is.installed <- function(package){
-    is.element(package, installed.packages()[,1])
-  } 
-  
-# loading in data
-# library(rJava)
-library(remotes, lib.loc = "/usr/local/lib/R/site-library")
-# library(devtools)
-library(readxl)  #to read excel files
-  
-# plotting data
-library(ggplot2)
-# library(ggExtra) not installed # Add marginal histograms to ggplot2, and more ggplot2 enhancements
-library(ggfortify) # ordination plots
-library(ggrepel)
-library(cowplot)
-library(gganimate)
-library(grid) 
-library(gridExtra) # Extra pretty grids
-library(circlize) # Pretty colours
-library(pheatmap) # Pretty heatmaps
-library(ComplexHeatmap) # Even prettier heatmaps
-  
-# Statistics
-# install_github("pmartinezarbizu/pairwiseAdonis/pairwiseAdonis")
-library(pairwiseAdonis) # Post-hoc of PerMANOVA
-library(ggpubr) # Add statistics to ggplots
-library(rstatix)
-  
-# formatting data
-library(reshape2)
-library(plyr)
-library(gtable)
-library(grid)
-library(plyr) 
-library(dplyr)
-library(tidyr)
-library(tidyverse)
-library(data.table) # Useful to change ggplots!
-library(cluster)
-library(gtools)
-library(gdata) # Various R Programming Tools for Data Manipulation
-library(multcompView)
-library(lemon) 
-  
-# formatting sequencing data
-library(vegan) # Community Ecology Package
-library(phyloseq)
-library(microbiome) # To further manipulate phyloseq data
-library(ape) # Analyses of Phylogenetics and Evolution
-# library(MicEco)# Various functions for microbial community data, incl. copy number corrections
-# library(DESeq2)
-library(rBLAST) # Interface for BLAST search
-library(Biostrings)
-  
-# Other scripts
-library(scales)
-library(stringr)
-library(RColorBrewer)
-library(openxlsx)
-# library(plotly)
-# library(leaflet)
-library(gganimate)
-library(gtable)
-library(stringi)
-# remotes::install_github("thomasp85/transformr")
-# library(transformr)
-library(officer) # to create ppt
-  
-# Do stuff in parallel with multiple cores
-library(foreach)
-library(doParallel)
+
+# Function to check whether a package is installed
+is.installed <- function(package){
+  is.element(package, installed.packages()[,1])
+}
+
+# Load necessary packages for the analysis
+library(remotes)       # Package installation and dependency management
+library(readxl)        # Read Excel files
+library(ggplot2)       # Data visualization
+library(ggfortify)     # Ordination plots
+library(ggrepel)       # Repel overlapping text labels in plots
+library(cowplot)       # Combine multiple plots into one
+library(gganimate)     # Create animated plots
+library(grid)          # Grid graphics
+library(gridExtra)     # Arrange multiple grid-based plots
+library(circlize)      # Circular visualization of data
+library(pheatmap)      # Create pretty heatmaps
+library(ComplexHeatmap)# Create complex heatmaps
+library(pairwiseAdonis)# Post-hoc analysis of PerMANOVA
+library(ggpubr)        # Add statistical information to ggplots
+library(rstatix)       # Statistical analysis and visualization
+library(reshape2)      # Reshape and aggregate data
+library(plyr)          # Tools for data manipulation
+library(gtable)        # Manipulate grid graphics
+library(dplyr)         # Data manipulation and transformation
+library(tidyr)         # Tidy data operations
+library(tidyverse)     # Collection of packages for data manipulation and visualization
+library(data.table)    # Data manipulation with data tables
+library(cluster)       # Cluster analysis
+library(gtools)        # Miscellaneous R programming tools
+library(gdata)         # Various R programming tools for data manipulation
+library(multcompView)  # Visualize multiple comparisons
+library(lemon)         # Enhance ggplot2 visualizations
+library(vegan)         # Community ecology package
+library(phyloseq)      # Manipulate and analyze microbiome data
+library(microbiome)    # Further manipulation of phyloseq data
+library(ape)           # Analyses of phylogenetics and evolution
+library(rBLAST)        # Interface for BLAST search
+library(Biostrings)    # Manipulate biological strings
+library(scales)        # Graphical scales for plots
+library(stringr)       # String manipulation
+library(RColorBrewer)  # Color palettes
+library(openxlsx)      # Read and write Excel files
+library(officer)       # Create PowerPoint presentations
+library(foreach)       # Looping constructs for parallel computing
+library(doParallel)    # Parallel computing in R
+
+# Set the number of cores for parallel processing
 corenumber = 10
 
+# Load custom scripts
+source('YM_KDP_papertheme.R')           # Custom theme for ggplot2
+source('YM_changetaxa.R')               # Change taxa that don't correspond with RDP database
+source("KDP_tax_summarize.R")           # Summarize taxonomic data
+source("KDP_volcano.R")                 # Create volcano plots
+source("KDP_splittaxfunction.R")        # Split taxonomic functions
+source("YM_aggregate_top_OTU.R")        # Aggregate top OTUs
+source("YM_fusetoplayer.R")             # Fuse plots into an animated player
+source("YM_extrafunctions.R")           # Additional helper functions
+           
+
+
+
+
+
   
-  
-  
-# Own scripts
-source('YM_KDP_papertheme.R')
-source('YM_changetaxa.R') # Change taxa that don't correspond with RDP database
-source("KDP_tax_summarize.R")
-source("KDP_volcano.R")
-source("KDP_splittaxfunction.R")
-source("YM_aggregate_top_OTU.R")
-source("YM_fusetoplayer.R")
-source("YM_extrafunctions.R")
-# devtools::install_github("teunbrand/ggh4x")
 
-
-# citation(package = "base") # To know what to cite
-version #Current R version
-citation(package = "igraph")
-sessionInfo() #To know all package versions
-
-# Make supplementary figures in grey values for cheaper printing. For paper make = false
-BW = TRUE
-```
-
-## Colours and labels
-```{r labels and colours, message=FALSE, warning=FALSE}
-# Universal colours for the project
-source("YM_colours.R")
-# Labels
-donor.labs <- c("Donor 1", "Donor 2", "Donor 3", "Donor 4", "Donor 5", "Donor 6")
-names(donor.labs) <- c("1", "2", "3", "4","5","6")
-PD_Colon.labs <- c("Faecal sample","Proximal colon", "Distal colon")
-names(PD_Colon.labs) <- c("FS","P", "D")
-PD_Colon.labsPC <- c("Faecal sample","Proximal colon", "Distal colon")
-names(PD_Colon.labsPC) <- c("FS","P", "D")
-# Labels
-VFA.labs <- c("Acetate", "Propionate", "Butyrate", "Total")
-names(VFA.labs) <- c("Acetate", "Propionate", "Butyrate", "total_SCFA")
-donor.labs <- c("Donor 1 - Short", "Donor 2 - Short", "Donor 3 - Medium", "Donor 4 - Long", "Donor 5 - Long", "Donor 6 - Medium")
-names(donor.labs) <- c("1", "2", "3", "4","5","6")
-Vessel.labs <- c("Faecal sample","Proximal colon", "Distal colon")
-names(Vessel.labs) <- c("FS","P", "D")
-Transit.labs <- c("Short transit", "Medium transit", "Long transit")
-names(Transit.labs) <- c("ST", "MT", "LT")
-donor.labs <- c("Donor 1", "Donor 2", "Donor 3", "Donor 4", "Donor 5", "Donor 6")
+", "Donor 3", "Donor 4", "Donor 5", "Donor 6")
 names(donor.labs) <- c("1", "2", "3", "4","5","6")
 saveplots <- function () setwd("/Projects2/Yorick/Rstudio_projects/Task1.2TransitSHIME/Data/Results/Plots") #save plots
 RDP <- T
