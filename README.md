@@ -4,11 +4,15 @@ Here, you will find the codebase that was used to conduct the analyses presented
 
 ## About the Paper
 
-The paper "<b>Gut microbiota response to <i>in vitro</i> transit time variation is mediated by microbial growth rates, nutrient use efficiency and adaptation to <i>in vivo</i> transit time</b>" serves as the cornerstone of our research, outlining the objectives, methodologies, and key findings of our work. To gain a deeper understanding of the context and significance of the analyses performed here, we strongly encourage you to refer to the paper. You can access the paper [link] to get a comprehensive overview.
+In the paper "<b>Gut microbiota response to <i>in vitro</i> transit time variation is mediated by microbial growth rates, nutrient use efficiency and adaptation to <i>in vivo</i> transit time</b>", we attempted to investigate the effects of transit time on an <i>in vitro</i> gut microbial community. To gain a deeper understanding of the context and significance of the analyses performed here, we strongly encourage you to refer to the paper. You can access the paper [Link](URL) to get a comprehensive overview.
 
-## Repository Contents
+### Reference
 
-Our GitHub repository is organized to provide easy access to the code used in the analyses:
+If you would use or build upon this code, please refer to Minnebo <i> et al.</i>, (2023) Gut microbiota response to <i>in vitro</i> transit time variation is mediated by microbial growth rates, nutrient use efficiency and adaptation to <i>in vivo</i> transit time</b>. <i>Microbiome</i> vol. X, p X-X
+
+## What are the Repository contents?
+
+This GitHub repository is organised to provide easy access to the code used in the analyses:
 
 - **Code**: This section holds the source code responsible for conducting the analyses detailed in the paper. Each script is thoroughly documented to help you follow the process step by step.
 
@@ -16,15 +20,18 @@ Our GitHub repository is organized to provide easy access to the code used in th
 
 ## How to Use
 
-If you're interested in replicating the analyses or building upon them, you can start by navigating to the `Code` directory. Inside, you will find individual scripts that correspond to different aspects of the analyses carried out in the paper. Each script contains comments and explanations to guide you through the implementation.
+If you're interested in replicating the analyses or building upon them, you can start by navigating to the `Code` directory. Inside, you will find individual scripts and markdowns that correspond to different aspects of the analyses carried out in the paper. Each script contains comments and explanations to guide you through the implementation.
 
-Feel free to experiment, modify, and expand upon the code as you see fit. Should you encounter any questions or obstacles, we encourage you to raise an Issue in this repository. Collaboration and knowledge sharing are at the heart of our project's philosophy.
+### Which markdowns contain the code to which figures/results?
 
-## Get Involved
+As you can see, there are 3 markdowns in the code: Analysis-Illumina.Rmd, FCM_analyses.Rmd and SCFA_analyses.Rmd. Each of them contain codes to specific results and figures:
+* <b>Analysis-Illumina.Rmd</b>: Figure 
 
-We believe in the value of a collaborative community. If you have suggestions for improvements, identify potential issues, or want to contribute enhancements to the code, your input is highly appreciated. You can submit a Pull Request, and our team will review your contributions.
 
-Thank you for your interest in our project. We hope the code and resources here prove to be valuable in your exploration and understanding of our work.
+
+Feel free to experiment, modify, and expand upon the code as you see fit. Should you encounter any questions or obstacles, we encourage you to raise an Issue in this repository. 
+
+
 
 Happy (re)analysing!
 
