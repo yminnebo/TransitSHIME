@@ -1,76 +1,82 @@
 ---
-title: "Good Cell Counting"
+title: "Flow cytometry analysis"
 output: html_document
+author: "Yorick Minnebo"
+date: "19-08-2019"
+updated: "08-08-2023"
 editor_options: 
   chunk_output_type: inline
 ---
+
+
+
 # Setup
-```{r Set-up, include=TRUE, echo=FALSE}
+```{r Setup, include=TRUE, echo=FALSE}
 #knitr::opts_chunk$set(echo = TRUE)
-knitr::opts_chunk$set(eval = TRUE, #evaluate code and include results
-                      #echo = TRUE, #display code with results
-                      cache = TRUE,
-                      include = TRUE, #include all 
-                      collapse = FALSE,
-                      dependson = NULL,
-                      warning = FALSE,
-                      engine = "R", # Chunks will always have R code, unless noted
-                      error = TRUE,
-                      fig.align = "center",
-                      cache.lazy = FALSE)
+knitr::opts_chunk$set(
+  eval = TRUE,     # Evaluate code and include results
+  #echo = TRUE,    # Display code with results
+  cache = TRUE,    # Cache results
+  include = TRUE,  # Include all content
+  collapse = FALSE,
+  dependson = NULL,
+  warning = FALSE,
+  engine = "R",    # Chunks will always have R code, unless noted
+  error = TRUE,
+  fig.align = "center",
+  cache.lazy = FALSE
+)
 
+# Load packages for various functionalities
+  ## Flow cytometry analysis and visualization
+  library("Phenoflow")   # Provides fingerprinting tools
+  library("flowViz")     # Offers advanced flow cytometry visualization
+  library("ggcyto")      # Integrates ggplot2 and flow cytometry data
+  library("plyr")        # Data manipulation functions
+  library("dplyr")       # Data manipulation and transformation
+  library("tibble")      # Data manipulation with tibbles
 
-# Working directories
-dataframedir <- function() setwd("/Projects2/Yorick/Rstudio_projects/Task1.2TransitSHIME/Data")
-savedir <- function() setwd("/Projects2/Yorick/Rstudio_projects/Task1.2TransitSHIME/Data/Results") #save results
+  ## Visualization and plotting
+  library("ggplot2")     # Comprehensive plotting package
+  library("cowplot")     # Arranging and annotating multiple plots
+  library("ggpubr")      # Publication-ready plots with ggplot2
+  library("gridExtra")   # Arranging multiple grid-based plots
 
-# Load packages
-# library(devtools)
-# library(devtools, lib.loc = "/usr/local/lib/R/site-library")
-#install_github("rprops/Phenoflow_package") #already installed here!
-library("Phenoflow") # for fingerprinting
-library("flowViz") # for plotting
-library("ggcyto")
-library(plyr)
-library(dplyr)
-library(tibble)
-# devtools::install_github("DillonHammill/CytoExploreR")
-# install_github("RGLab/flowCore")
-# library("CytoExploreR")
-library("ggplot2") # for plotting
-library("flowAI") # for denoising
-library(flowViz)
-library("reshape2")
-library("gridExtra")
-library("tidyr")
-library("dplyr") #for data management
-library("cowplot")
-library('grid')
-library(rstatix)
-library(gtable)
-library(ggpubr)
-source("YM_KDP_papertheme.R")
-source('gglocator2.R')
-library(officer) # to create ppt
-source("YM_extrafunctions.R")
-source("YM_fusetoplayer.R")
-# library(energy)
-# library(rvg) # for officer to add ggplots
-biexptrans <- flowjo_biexp(maxValue = 262144, widthBasis = -10,pos = 4.5, neg = 0)
-biexptrans_inv <- flowjo_biexp(maxValue = 262144, widthBasis = -10,pos = 4.5, neg = 0,inverse=T)
+  ## Data preprocessing and transformation
+  library("reshape2")    # Data reshaping and melting
 
-paths <- list("home" = "/Projects2/Yorick/Rstudio_projects/Task1.2TransitSHIME/TransitSHIME", 
-            "samples" = "/media/cmetfcm02/Yorick/TransitSHIME/All", 
-             "controls" = "/media/projects2/yorick/Rstudio_projects/Archaea_screening/Data/M.smithii")
-saveplots <- function () setwd("/Projects2/Yorick/Rstudio_projects/Task1.2TransitSHIME/Data/Results/Plots") #save plots
-ppt = TRUE; low_resolution_plots = TRUE
+  ## Denoising flow cytometry data
+  library("flowAI")      # Denoising flow cytometry data
 
-# packageVersion("energy")
-# citation("energy")
+  ## Data analysis and statistics
+  library("rstatix")     # Pipe-friendly functions for statistical analysis
+  library("tidyr")       # Data tidying and reshaping
+
+  ## PowerPoint generation
+  library("officer")     # Creating PowerPoint documents programmatically
+
+  ## Custom source files for project-specific functions
+  source("YM_KDP_papertheme.R")  # Custom theme for ggplot2
+  source("gglocator2.R")         # Enhanced ggplot2 plot locator
+  source("YM_extrafunctions.R")  # Additional custom functions
+  source("YM_fusetoplayer.R")    # Project-specific function
+
+# Paths and settings
+paths <- list(
+  "home" = "INSERT HOME DIRECTORY HERE", 
+  "samples" = "INSERT DIRECTORY WITH FCS FILES HERE" # fcs. files are accessible on flow repository (see paper for more info) 
+)
+
+# Function to set plot saving directory (I like to have it exported in a different dir)
+saveplots <- function() setwd("INSERT DIRECTORY HERE")
+
+# Settings for generating PowerPoint and low-resolution plots
+ppt = TRUE
+low_resolution_plots = TRUE
+
+# Unicode labels for in vivo
 lblinvivo <- "\U0001d62a\U0001D62F \U0001D637\U0001d62a\U0001D637\U0001D630"
 lblInvivo <- "\U0001D43C\U0001D62F \U0001D637\U0001d62a\U0001D637\U0001D630"
-# cat(lblinvivo)
-
 
 # Make supplementary figures in grey values for cheaper printing. For paper make = false
 BW = TRUE
@@ -78,171 +84,168 @@ BW = TRUE
 
 ## labels
 ```{r labels and colours, message=FALSE, warning=FALSE}
+
 # Universal colours for the project
 source("YM_colours.R")
 
-# Labels
-PD_Colon.labs <- c("Faecal sample","Proximal colon", "Distal colon")
-names(PD_Colon.labs) <- c("FS","P", "D")
-PD_Colon.labsPC <- c("Faecal sample","Proximal colon", "Distal colon")
-names(PD_Colon.labsPC) <- c("FS","P", "D")
-Vessel.labs <- c("Faecal sample","Proximal colon", "Distal colon")
-names(Vessel.labs) <- c("FS","P", "D")
+# Labels for different contexts
+
+# Labels for PD Colon
+PD_Colon.labs <- c("Faecal sample", "Proximal colon", "Distal colon")
+names(PD_Colon.labs) <- c("FS", "P", "D")
+
+# Labels for PD Colon PC (Potentially a different context)
+PD_Colon.labsPC <- c("Faecal sample", "Proximal colon", "Distal colon")
+names(PD_Colon.labsPC) <- c("FS", "P", "D")
+
+# Labels for Vessel context
+Vessel.labs <- c("Faecal sample", "Proximal colon", "Distal colon")
+names(Vessel.labs) <- c("FS", "P", "D")
+
+# Labels for Transit context
 Transit.labs <- c("Short transit", "Medium transit", "Long transit")
 names(Transit.labs) <- c("ST", "MT", "LT")
+
+# Labels for Donors
 donor.labs <- c("Donor 1", "Donor 2", "Donor 3", "Donor 4", "Donor 5", "Donor 6")
-names(donor.labs) <- c("1", "2", "3", "4","5","6")
+names(donor.labs) <- c("1", "2", "3", "4", "5", "6")
 ```
-
-#### Graphical abstract tryout
-```{r fig.height=4, fig.width=6}
-df <- data.frame(Time = c(8,16,24,13,26,39,21,42,63), Transit = c("Short", "Medium", "Long", "Short", "Medium", "Long","Short", "Medium", "Long"), 
-                 Vessel = c("Proximal colon", "Proximal colon","Proximal colon",  
-                            "Distal colon", "Distal colon", "Distal colon", 
-                            "Total colon", "Total colon", "Total colon"))
-
-df$Transit <- as.ordered(factor(df$Transit,levels=c("Short", "Medium", "Long")))
-df$Vessel <- as.ordered(factor(df$Vessel,levels=c("Proximal colon", "Distal colon", "Total colon")))
-    
-  
-papertheme(ggplot(df, aes(x = Vessel, y = Time, color = Transit, fill = Transit))) + geom_bar(stat = "identity", position=position_dodge()) + scale_fill_manual(values =  c("Short" ="#7ACD74" , "Medium"="#757BCD", "Long"="#CD747A"))+
-  scale_color_manual(values =  c("Short" ="#7ACD74" , "Medium"="#757BCD", "Long"="#CD747A")) +geom_label(aes(label = Time), position = position_dodge(width = .9), color = "black", size = 8) + theme(axis.title.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank(), axis.title.x = element_blank(), legend.position = c(0.15,0.8),panel.border = element_blank(), legend.title = element_blank()) + ylim(0,66)
-```
-
 
 
 # Prepare data - Samples split per SHIME
 ## Load data
-The measured samples were analysed with a combined Sybr Green(SG) and Propidium iodide (PI) staining to differentiate the intact and damaged fractions. Split flowsets per SHIME run: 1 = donors 1 and 2, 2 = donors 3 and 4, 3 = donors 5 and 6:
+# The measured samples were analysed with a combined Sybr Green(SG) and Propidium iodide (PI) staining to differentiate the intact and damaged fractions.
+# Split flowsets per SHIME run: 1 = donors 1 and 2, 2 = donors 3 and 6, 3 = donors 4 and 5:
 ```{r Load data split per SHIME run}
 ## Load metadata
- setwd(paths$home); getwd()
- FCM_FS_SGPI_metadata <- read.csv2("Sampledata_fcm.csv", sep = ",")
- 
- # Create data frames per SHIME run
- df1 <- rbind(subset(FCM_FS_SGPI_metadata, Donor == "1"),subset(FCM_FS_SGPI_metadata, Donor == "2"))
- df1 <- subset(df1, Samplename != "Tube_001_0_20190902_165147.fcs")
- 
- df2 <- rbind(subset(FCM_FS_SGPI_metadata, Donor == "3"),subset(FCM_FS_SGPI_metadata, Donor == "4"))
- df2 <- subset(df2, Samplename != "Tube_001_40_20191008_163744.fcs")
- 
- df3 <- rbind(subset(FCM_FS_SGPI_metadata, Donor == "5"),subset(FCM_FS_SGPI_metadata, Donor == "6"))
- df3 <- subset(df3, Samplename != "Tube_001_80.-5_20191106_160905.fcs")
- 
- 
- ## revalue donor 4 to 6 and 6 to 4
- FCM_FS_SGPI_metadata$Donor[FCM_FS_SGPI_metadata$Donor == 4] <- 7; FCM_FS_SGPI_metadata$Donor[FCM_FS_SGPI_metadata$Donor == 6] <- 4
- FCM_FS_SGPI_metadata$Donor[FCM_FS_SGPI_metadata$Donor == 7] <- 6; df2$Donor[df2$Donor == 4] <- 6; df3$Donor[df3$Donor == 6] <- 4
- 
- 
- set.seed(777)
-  setwd(paths$samples); getwd(); x = 1
-  FCM_FS1 <- read.flowSet(transformation = FALSE, pattern="Tube_001_0_20190902_165147.fcs",path=getwd())
- for (i in df1$Samplename) {
-    FCM_FS <- read.flowSet(transformation = FALSE, pattern=i,path=getwd())
-    FCM_FS1 <- rbind2(FCM_FS1, FCM_FS) 
-    if(x %% 25 ==0){message(paste0(x, "/", length(df1$Samplename)," fcs files extracted", sep = ""))}; x = x+1
-  }
-  
-  FCM_FS2 <- read.flowSet(transformation = FALSE, pattern="Tube_001_40_20191008_163744.fcs",path=getwd())
-  for (i in df2$Samplename) {
-    FCM_FS <- read.flowSet(transformation = FALSE, pattern=i,path=getwd())
-    FCM_FS2 <- rbind2(FCM_FS2, FCM_FS)
-    if(x %% 25 ==0){
+setwd(paths$home); getwd()
+FCM_FS_SGPI_metadata <- read.csv2("Sampledata_fcm.csv", sep = ",")
+
+# Create data frames per SHIME run
+df1 <- rbind(subset(FCM_FS_SGPI_metadata, Donor == "1"),subset(FCM_FS_SGPI_metadata, Donor == "2"))
+df1 <- subset(df1, Samplename != "Tube_001_0_20190902_165147.fcs") # Remove due to insufficient cells in sample
+
+df2 <- rbind(subset(FCM_FS_SGPI_metadata, Donor == "3"),subset(FCM_FS_SGPI_metadata, Donor == "4"))
+df2 <- subset(df2, Samplename != "Tube_001_40_20191008_163744.fcs") # Remove due to insufficient cells in sample
+
+df3 <- rbind(subset(FCM_FS_SGPI_metadata, Donor == "5"),subset(FCM_FS_SGPI_metadata, Donor == "6"))
+df3 <- subset(df3, Samplename != "Tube_001_80.-5_20191106_160905.fcs") # Remove due to insufficient cells in sample
+
+## IMPORTANT, originally, donors 4 and 6 were the other way around. We decided to swap them around so that the graphs would be visually more pleasant: The original revalue donor 4 to 6 and 6 to 4
+FCM_FS_SGPI_metadata$Donor[FCM_FS_SGPI_metadata$Donor == 4] <- 7; FCM_FS_SGPI_metadata$Donor[FCM_FS_SGPI_metadata$Donor == 6] <- 4
+FCM_FS_SGPI_metadata$Donor[FCM_FS_SGPI_metadata$Donor == 7] <- 6
+df2$Donor[df2$Donor == 4] <- 6; df3$Donor[df3$Donor == 6] <- 4
+
+set.seed(777)
+setwd(paths$samples); getwd(); x = 1
+FCM_FS1 <- read.flowSet(transformation = FALSE, pattern="Tube_001_0_20190902_165147.fcs",path=getwd())
+for (i in df1$Samplename) {
+   FCM_FS <- read.flowSet(transformation = FALSE, pattern=i,path=getwd())
+   FCM_FS1 <- rbind2(FCM_FS1, FCM_FS) 
+   if(x %% 25 ==0){message(paste0(x, "/", length(df1$Samplename)," fcs files extracted", sep = ""))}; x = x+1
+}
+
+FCM_FS2 <- read.flowSet(transformation = FALSE, pattern="Tube_001_40_20191008_163744.fcs",path=getwd())
+for (i in df2$Samplename) {
+   FCM_FS <- read.flowSet(transformation = FALSE, pattern=i,path=getwd())
+   FCM_FS2 <- rbind2(FCM_FS2, FCM_FS)
+   if(x %% 25 ==0){
       message(paste0(x,"/",(length(df2$Samplename)+length(df1$Samplename))," fcs files extracted", sep = ""))}
-    x = x+1
-  }
-  
-  FCM_FS3 <- read.flowSet(transformation = FALSE, pattern="Tube_001_80.-5_20191106_160905.fcs",path=getwd())
-  for (i in df3$Samplename) {
-    FCM_FS <- read.flowSet(transformation = FALSE, pattern=i,path=getwd())
-    FCM_FS3 <- rbind2(FCM_FS3, FCM_FS)
-    if(x %% 25 ==0){message(paste0(x,"/", (length(df2$Samplename)+length(df1$Samplename)+length(df3$Samplename)),
-                           " fcs files extracted", sep = ""))}; x = x+1
-  }
-  cat(crayon::yellow(whale3))
-  
-  
-  
-  setwd(paths$samples)
-  # attributes(FCM_FS1); attributes(FCM_FS2); attributes(FCM_FS3)
-  colnames(FCM_FS1) <- mapvalues(colnames(FCM_FS1),
-                                 from=c('FITC-A','PerCP-Cy5.5-A'),to=c('SG-A','PropIod-A'))
-  colnames(FCM_FS2) <- mapvalues(colnames(FCM_FS2),
-                                 from=c('FITC-A','PerCP-Cy5.5-A'),to=c('SG-A','PropIod-A'))
-  colnames(FCM_FS3) <- mapvalues(colnames(FCM_FS3),
-                                 from=c('FITC-A','PerCP-Cy5.5-A'),to=c('SG-A','PropIod-A'))
-  
-  ### Extract and adjust sample names 
- test <- rbind(data.frame(Names = flowFP::sampleNames(FCM_FS1), SHIME = "1"), 
-               data.frame(Names = flowFP::sampleNames(FCM_FS2), SHIME = "2"),
-               data.frame(Names = flowFP::sampleNames(FCM_FS3), SHIME = "3"))
-               
- setwd(paths$home); write.csv2(file="FCMnames.csv", test)
- 
- sampleNames(FCM_FS1) <- as.character(FCM_FS_SGPI_metadata[match(flowFP::sampleNames(FCM_FS1),
-                                        as.character(FCM_FS_SGPI_metadata$Samplename)),]$Name)
- FCM_FS1@phenoData@data[["name"]] <- as.character(FCM_FS_SGPI_metadata[match(FCM_FS1@phenoData@data[["name"]],                                                                      as.character(FCM_FS_SGPI_metadata$Samplename)),]$Name)
- 
- sampleNames(FCM_FS2) <- as.character(FCM_FS_SGPI_metadata[match(flowFP::sampleNames(FCM_FS2),
-                                        as.character(FCM_FS_SGPI_metadata$Samplename)),]$Name)
- FCM_FS2@phenoData@data[["name"]] <- as.character(FCM_FS_SGPI_metadata[match(FCM_FS2@phenoData@data[["name"]],                                                                      as.character(FCM_FS_SGPI_metadata$Samplename)),]$Name)
- 
- sampleNames(FCM_FS3) <- as.character(FCM_FS_SGPI_metadata[match(flowFP::sampleNames(FCM_FS3),
-                                        as.character(FCM_FS_SGPI_metadata$Samplename)),]$Name)
- FCM_FS3@phenoData@data[["name"]] <- as.character(FCM_FS_SGPI_metadata[match(FCM_FS3@phenoData@data[["name"]],                                                                      as.character(FCM_FS_SGPI_metadata$Samplename)),]$Name)
- 
-  
+   x = x+1
+}
+
+FCM_FS3 <- read.flowSet(transformation = FALSE, pattern="Tube_001_80.-5_20191106_160905.fcs",path=getwd())
+for (i in df3$Samplename) {
+   FCM_FS <- read.flowSet(transformation = FALSE, pattern=i,path=getwd())
+   FCM_FS3 <- rbind2(FCM_FS3, FCM_FS)
+   if(x %% 25 ==0){message(paste0(x,"/", (length(df2$Samplename)+length(df1$Samplename)+length(df3$Samplename)),
+                          " fcs files extracted", sep = ""))}; x = x+1
+}
+cat(crayon::yellow(whale3))
+
+setwd(paths$samples)
+# attributes(FCM_FS1); attributes(FCM_FS2); attributes(FCM_FS3)
+colnames(FCM_FS1) <- mapvalues(colnames(FCM_FS1),
+                                from=c('FITC-A','PerCP-Cy5.5-A'),to=c('SG-A','PropIod-A'))
+colnames(FCM_FS2) <- mapvalues(colnames(FCM_FS2),
+                                from=c('FITC-A','PerCP-Cy5.5-A'),to=c('SG-A','PropIod-A'))
+colnames(FCM_FS3) <- mapvalues(colnames(FCM_FS3),
+                                from=c('FITC-A','PerCP-Cy5.5-A'),to=c('SG-A','PropIod-A'))
+
+### Extract and adjust sample names 
+test <- rbind(data.frame(Names = flowFP::sampleNames(FCM_FS1), SHIME = "1"), 
+              data.frame(Names = flowFP::sampleNames(FCM_FS2), SHIME = "2"),
+              data.frame(Names = flowFP::sampleNames(FCM_FS3), SHIME = "3"))
+
+setwd(paths$home); write.csv2(file="FCMnames.csv", test)
+
+sampleNames(FCM_FS1) <- as.character(FCM_FS_SGPI_metadata[match(flowFP::sampleNames(FCM_FS1),
+                                       as.character(FCM_FS_SGPI_metadata$Samplename)),]$Name)
+FCM_FS1@phenoData@data[["name"]] <- as.character(FCM_FS_SGPI_metadata[match(FCM_FS1@phenoData@data[["name"]],                                                                      
+                                                                     as.character(FCM_FS_SGPI_metadata$Samplename)),]$Name)
+
+sampleNames(FCM_FS2) <- as.character(FCM_FS_SGPI_metadata[match(flowFP::sampleNames(FCM_FS2),
+                                       as.character(FCM_FS_SGPI_metadata$Samplename)),]$Name)
+FCM_FS2@phenoData@data[["name"]] <- as.character(FCM_FS_SGPI_metadata[match(FCM_FS2@phenoData@data[["name"]],                                                                      
+                                                                     as.character(FCM_FS_SGPI_metadata$Samplename)),]$Name)
+
+sampleNames(FCM_FS3) <- as.character(FCM_FS_SGPI_metadata[match(flowFP::sampleNames(FCM_FS3),
+                                       as.character(FCM_FS_SGPI_metadata$Samplename)),]$Name)
+FCM_FS3@phenoData@data[["name"]] <- as.character(FCM_FS_SGPI_metadata[match(FCM_FS3@phenoData@data[["name"]],                                                                      
+                                                                     as.character(FCM_FS_SGPI_metadata$Samplename)),]$Name)
+
 ### Extract measured sample volume (and divide by 1000 to convert to µL)
- FCM_FS1_metadata_volume <- data.frame()
- for (i in flowFP::sampleNames(FCM_FS1)){
-   Volume <- FCM_FS1@frames[[i]]@description$VOL
-   Volumei <- cbind(FCM_FS_SGPI_metadata[FCM_FS_SGPI_metadata$Name==i,],
-                    Volume=as.numeric(Volume)/1000)
-   FCM_FS1_metadata_volume <- rbind(FCM_FS1_metadata_volume,Volumei)}
- 
- FCM_FS1_metadata_volume$Name <- as.character(FCM_FS1_metadata_volume$Name)
- FCM_FS1_metadata_volume$Volume2 <- 
-   FCM_FS1_metadata_volume$Volume * 10^FCM_FS1_metadata_volume$Dilution
- FCM_FS2_metadata_volume <- data.frame()
- for (i in flowFP::sampleNames(FCM_FS2)){
-   Volume <- FCM_FS2@frames[[i]]@description$VOL
-   Volumei <- cbind(FCM_FS_SGPI_metadata[FCM_FS_SGPI_metadata$Name==i,],
-                    Volume=as.numeric(Volume)/1000)
-   FCM_FS2_metadata_volume <- rbind(FCM_FS2_metadata_volume,Volumei)}
- 
- FCM_FS2_metadata_volume$Name <- as.character(FCM_FS2_metadata_volume$Name)
- FCM_FS2_metadata_volume$Volume2 <- 
-   FCM_FS2_metadata_volume$Volume * 10^FCM_FS2_metadata_volume$Dilution
- 
- 
- FCM_FS3_metadata_volume <- data.frame()
- for (i in flowFP::sampleNames(FCM_FS3)){
-   Volume <- FCM_FS3@frames[[i]]@description$VOL
-   Volumei <- cbind(FCM_FS_SGPI_metadata[FCM_FS_SGPI_metadata$Name==i,],
-                    Volume=as.numeric(Volume)/1000)
-   FCM_FS3_metadata_volume <- rbind(FCM_FS3_metadata_volume,Volumei)}
- 
- FCM_FS3_metadata_volume$Name <- as.character(FCM_FS3_metadata_volume$Name)
- FCM_FS3_metadata_volume$Volume2 <- 
-   FCM_FS3_metadata_volume$Volume * 10^FCM_FS3_metadata_volume$Dilution
- 
- ## Combine volume metadata
- FCM_FS_SGPI_metadata_volume <- rbind(FCM_FS1_metadata_volume, FCM_FS2_metadata_volume, FCM_FS3_metadata_volume)
- 
- 
+FCM_FS1_metadata_volume <- data.frame()
+for (i in flowFP::sampleNames(FCM_FS1)){
+  Volume <- FCM_FS1@frames[[i]]@description$VOL
+  Volumei <- cbind(FCM_FS_SGPI_metadata[FCM_FS_SGPI_metadata$Name==i,],
+                   Volume=as.numeric(Volume)/1000)
+  FCM_FS1_metadata_volume <- rbind(FCM_FS1_metadata_volume,Volumei)}
+
+FCM_FS1_metadata_volume$Name <- as.character(FCM_FS1_metadata_volume$Name)
+FCM_FS1_metadata_volume$Volume2 <- 
+  FCM_FS1_metadata_volume$Volume * 10^FCM_FS1_metadata_volume$Dilution
+FCM_FS2_metadata_volume <- data.frame()
+for (i in flowFP::sampleNames(FCM_FS2)){
+  Volume <- FCM_FS2@frames[[i]]@description$VOL
+  Volumei <- cbind(FCM_FS_SGPI_metadata[FCM_FS_SGPI_metadata$Name==i,],
+                   Volume=as.numeric(Volume)/1000)
+  FCM_FS2_metadata_volume <- rbind(FCM_FS2_metadata_volume,Volumei)}
+
+FCM_FS2_metadata_volume$Name <- as.character(FCM_FS2_metadata_volume$Name)
+FCM_FS2_metadata_volume$Volume2 <- 
+  FCM_FS2_metadata_volume$Volume * 10^FCM_FS2_metadata_volume$Dilution
+
+
+FCM_FS3_metadata_volume <- data.frame()
+for (i in flowFP::sampleNames(FCM_FS3)){
+  Volume <- FCM_FS3@frames[[i]]@description$VOL
+  Volumei <- cbind(FCM_FS_SGPI_metadata[FCM_FS_SGPI_metadata$Name==i,],
+                   Volume=as.numeric(Volume)/1000)
+  FCM_FS3_metadata_volume <- rbind(FCM_FS3_metadata_volume,Volumei)}
+
+FCM_FS3_metadata_volume$Name <- as.character(FCM_FS3_metadata_volume$Name)
+FCM_FS3_metadata_volume$Volume2 <- 
+  FCM_FS3_metadata_volume$Volume * 10^FCM_FS3_metadata_volume$Dilution
+
+## Combine volume metadata
+FCM_FS_SGPI_metadata_volume <- rbind(FCM_FS1_metadata_volume, FCM_FS2_metadata_volume, FCM_FS3_metadata_volume)
+
 ### Select parameters of interest
- param=c("SG-A", "PropIod-A","SSC-A","FSC-A")
- FCM_FS1 = FCM_FS1[,param]; FCM_FS2 = FCM_FS2[,param]; FCM_FS3 = FCM_FS3[,param]
+param=c("SG-A", "PropIod-A","SSC-A","FSC-A")
+FCM_FS1 = FCM_FS1[,param]; FCM_FS2 = FCM_FS2[,param]; FCM_FS3 = FCM_FS3[,param]
 ```
+
 
 ## Gate samples
 The loaded samples are gated through the interactive ggcyto package citation("ggcyto"):
 ```{r Gate samples split per SHIME run}
+
 # Used flowset 
 FS_SGPI1 <- FCM_FS1; flowFP::sampleNames(FS_SGPI1)
 FS_SGPI2 <- FCM_FS2; flowFP::sampleNames(FS_SGPI2)
 FS_SGPI3 <- FCM_FS3; flowFP::sampleNames(FS_SGPI3)
+
 # SHIME1
 # Create a gating set to add the below generated gates
   gs_FS <- GatingSet(FS_SGPI1)
@@ -428,8 +431,7 @@ FS_SGPI3 <- FCM_FS3; flowFP::sampleNames(FS_SGPI3)
   yminbiexp <-  biexptrans(ymin); ymaxbiexp <-  biexptrans(ymax)
   
   
-# formatR::tidy_app()
-# Load gates defined in the csv file
+# Load gates defined in the csv file. The gating used for the paper can be found in the datasets on the github repository!
  ## SHIME1
   SGPI_DMG_gate1 <- as.matrix(read.csv(paste(paths$home,"/SGPI_DMGgate1.csv",sep="")))[,-1]
   colnames(SGPI_DMG_gate1) <- c("SG-A","PropIod-A")
@@ -494,7 +496,7 @@ FS_SGPI3 <- FCM_FS3; flowFP::sampleNames(FS_SGPI3)
   scale_y_flowjo_biexp(expand=c(0,0)) + ggcytolimits  
   
 ## Check gating
-  plotthem = F
+  plotthem = T # Name T if you want to plot all flow cytometry plots. F if you don't.
   if(plotthem == T){
   
 if (low_resolution_plots == TRUE){
@@ -600,16 +602,23 @@ if (low_resolution_plots == TRUE){
 ```
 
 
+
+
+
+
+
 ## TruCount samples - Already run by yours truly!
-The volumes of some samples could not be measured in SHIME run 2. TruCount beads were therefore used to measure them. 
+The volumes of some samples could not be measured in SHIME run 2. TruCount beads were therefore used to measure them instead. This is already performed and put into a csv file (Sampledata_TruCount.csv) in the datasets
 ```{r TruCount extraction-Already run!}
+
 # Import metadata file
 wdir()
 TruCount_metadata <- read.csv2("Sampledata_TruCount.csv", sep = ","); TruCount_metadata <- TruCount_metadata[complete.cases(TruCount_metadata), ]
 ## revalue donor 4 to 6
  TruCount_metadata$Donor[TruCount_metadata$Donor == 4] <- 6
+
 # Import fcs files
-FCM_TruCount <- read.flowSet(transformation = FALSE, pattern=".fcs",path="/Projects2/Yorick/Rstudio_projects/Task1.2TransitSHIME/Data/FCM/TruCount")
+FCM_TruCount <- read.flowSet(transformation = FALSE, pattern=".fcs",path="INSERT PATH TO TruCount SAMPLES")
   message("Done! TruCount: 23 fcs files extracted"); attributes(FCM_TruCount)
   
 # Rename column names
@@ -730,56 +739,64 @@ write.csv2(file="trucounts.csv", trucounts)
 ```
 
 ## Extract cell counts
-Extract counts
+# Extracts cell counts from the objects
 ```{r Extract cell counts split per SHIME run}
 # Extract cell counts and take into account the dilution factor and conversion from cells/µL to cells/mL 
 counts <- rbind(data.frame(gs_pop_get_count_fast(gs_FS1,statistic="count")),
                 data.frame(gs_pop_get_count_fast(gs_FS2,statistic="count")),
                 data.frame(gs_pop_get_count_fast(gs_FS3,statistic="count")))
+
 counts <- reshape2::dcast(counts[,-c(3,5)],id.vars=name,value.var="Count",name~Population)
 rownames(counts) <- counts[,1]
 colnames(counts) <- c("name","Background", "Damaged", "Intact")
 counts <- merge(FCM_FS_SGPI_metadata_volume,counts,by.x="Name",by.y="name")
+
 FILT <- counts %>%  subset(Filtered=="Yes")
 counts <- mutate(counts,
                  BackgroundpermL = (Background/Volume)*10^(3+Dilution), 
                  DamagedpermL = (Damaged/Volume)*10^(3+Dilution), 
                  IntactpermL = (Intact/Volume)*10^(3+Dilution))
+
 trucounts <- read.csv2("trucounts.csv") # Load TruCount samples
 trucounts <- subset(trucounts, select = -c(X))
 counts <- rbind(counts, trucounts)
-                   
+
+## Create intermediate back up of data (just to be sure)
 countsbu <- counts %>% subset(select=-c(Volume, Volume2))
 countsbu <-countsbu[!(countsbu$Vessel=="#N/A"),]
-  ## Calculations
-  counts <- mutate(countsbu, TotalpermL = DamagedpermL + IntactpermL,
-                   Ratio.intact.dead=IntactpermL/DamagedpermL,
-                   Perc_intact = 100*IntactpermL/TotalpermL)
-  
+
+## Calculations
+counts <- mutate(countsbu, TotalpermL = DamagedpermL + IntactpermL,
+                 Ratio.intact.dead=IntactpermL/DamagedpermL,
+                 Perc_intact = 100*IntactpermL/TotalpermL)
+
 ## Remove filtered and heatkilled samples
-  counts <- subset(counts, Filtered == "No"); counts <- subset(counts, Heat_killed == "No")
-  counts <- subset(counts, Blank == "No")
-  
+counts <- subset(counts, Filtered == "No")
+counts <- subset(counts, Heat_killed == "No")
+counts <- subset(counts, Blank == "No")
+
 ## Take average and stdev of the replicates and melt dataframe for visualizations
-  counts <- ungroup(counts)
-  by_nr <- counts %>% group_by(Nr) %>% 
+counts <- ungroup(counts)
+by_nr <- counts %>% group_by(Nr) %>% 
     summarise(SDtot = sd(TotalpermL), meantot = mean(TotalpermL),
-      SDINT = sd(IntactpermL), meanINT = mean(IntactpermL),
-      SDDMG = sd(DamagedpermL), meanDMG = mean(DamagedpermL),
-      SDPerc = sd(Perc_intact), meanPER = mean(Perc_intact), 
-      Donor = Donor, Dilution = Dilution, Transit = Transit, 
-      Vessel = Vessel, Day = Day, Ninetransit = Ninetransit) 
-  
-  by_nr <- by_nr[!duplicated(by_nr), ]
-      # by_nr$tot <- by_nr$meanINT + by_nr$meanDMG 
-      setwd(paths$home)
+              SDINT = sd(IntactpermL), meanINT = mean(IntactpermL),
+              SDDMG = sd(DamagedpermL), meanDMG = mean(DamagedpermL),
+              SDPerc = sd(Perc_intact), meanPER = mean(Perc_intact), 
+              Donor = Donor, Dilution = Dilution, Transit = Transit, 
+              Vessel = Vessel, Day = Day, Ninetransit = Ninetransit) 
+
+by_nr <- by_nr[!duplicated(by_nr), ]
+setwd(paths$home)
 write.csv2(file="results.FCM.counts.merged.csv", by_nr)
+
 ## Reorder and work with the data frame
 by_nr$Transit <- as.ordered(factor(by_nr$Transit,levels=c("ST","MT","LT")))
 by_nr$Vessel <- as.ordered(factor(by_nr$Vessel,levels=c("P", "D")))
 by_nr$Donor <- as.ordered(factor(by_nr$Donor,levels=c(1,2,3,4,5,6)))
 by_nr$Day <- as.ordered(factor(by_nr$Day,levels=seq(from = 0, to = 20, by = 1)))
 df <- data.frame()
+
+## Add a column with the in vivo transit time
 for (i in unique(by_nr$Donor)) {
   df1 <- subset(by_nr, Donor == i)
   if(i == 1 | i == 2){df1$intTransit <- "Short transit donor"}
@@ -789,16 +806,18 @@ for (i in unique(by_nr$Donor)) {
 }
 by_nr <- df
 by_nr$intTransit <- as.ordered(factor(by_nr$intTransit,
-                      levels=c("Short transit donor","Medium transit donor","Long transit donor")))
+                    levels=c("Short transit donor","Medium transit donor","Long transit donor")))
+
 # Save the table
 write.csv(by_nr,paste(paths$home,"/cellcounts.csv",sep=""))
+
 counts$Transit <- as.ordered(factor(counts$Transit,levels=c("ST","MT","LT")))
 counts$Vessel <- as.ordered(factor(counts$Vessel,levels=c("P", "D")))
 counts$Donor <- as.ordered(factor(counts$Donor,levels=c(1,2,3,4,5,6)))
-# counts$Donor <- as.ordered(factor(counts$Donor,levels=c(1,2,3,6,5,4)))
 counts$Day <- as.ordered(factor(counts$Day,levels=seq(from = 0, to = 20, by = 1)))
 df.counts <- data.frame()
 
+## Add a column with the in vivo transit time
 for (i in unique(counts$Donor)) {
   df1 <- subset(counts, Donor == i)
   if(i == 1 | i == 2){df1$intTransit <- "Short transit donor"}
@@ -807,21 +826,17 @@ for (i in unique(counts$Donor)) {
   df.counts<- rbind(df.counts, df1)
 }
 df.counts$intTransit <- as.ordered(factor(df.counts$intTransit,
-                      levels=c("Short transit donor","Medium transit donor","Long transit donor")))
+                        levels=c("Short transit donor","Medium transit donor","Long transit donor")))
 rm(df, df1)
 
-
 test <- subset(by_nr, Donor == 1 | Donor ==4 | Donor == 6)
-test <- subset(test, select = c(Donor, Nr,  meantot, SDtot,                meanINT,  SDINT,    SDDMG,       meanDMG, Dilution, Transit,  Vessel ,Day        , intTransit ))
-colnames(test) <- c("Donor",     "Samplenumber"  ,       "Avg_total_cells"   , "SD_total_cells"    ,  "Avg_intact_cells"   , "SD_intact_cells"  ,   "Avg_damaged_cells"   , "SD_damaged_cells" ,  "Dilution" ,  "Transit" ,   "Vessel"   ,  "Day"     ,   "intTransit")
-
-
+test <- subset(test, select = c(Donor, Nr,  meantot, SDtot, meanINT,  SDINT,    SDDMG,       meanDMG, Dilution, Transit,  Vessel ,Day        , intTransit ))
+colnames(test) <- c("Donor",     "Samplenumber", "Avg_total_cells", "SD_total_cells",  "Avg_intact_cells", "SD_intact_cells",   "Avg_damaged_cells", "SD_damaged_cells", "Dilution", "Transit",   "Vessel",  "Day",       "intTransit")
 ```
 
 
-# Growth efficiency per volumetric nutrient loading rate
-totaal aantal cellen in de elke reactor tov totale hoeveelheid nutrienten in die reactor: efficientie waarmee ze groeien 
-## With averages
+# Biomass growth efficiency with carbohydrate consumptions; Growth efficiency per volumetric nutrient loading rate
+## Start with averaged cell counts, grouped by date, donor, transit time and colon vessel 
 ```{r Biomass growth efficiency, fig.height=14, fig.width=14}
 # Start with bruto production
 netproduction <- subset(df.counts, Ninetransit == 3)
@@ -915,10 +930,14 @@ biomass_relative_load <- mutate(netproduction, Biomass = meantot/load,
 biomass_relative_load <- subset(biomass_relative_load, Vessel == "P")
 
 
-papertheme(ggplot(netproduction, aes(x = Transit, y = Carbohydrate)) + geom_bar(stat = "identity")+facet_grid(Vessel ~ Donor, scales = "free", labeller = labeller(Vessel = Vessel.labs, Donor = donor.labs)))
+print(papertheme(ggplot(netproduction, aes(x = Transit, y = Carbohydrate)) + 
+  geom_bar(stat = "identity")+ 
+  facet_grid(Vessel ~ Donor, scales = "free", 
+    labeller = labeller(Vessel = Vessel.labs, Donor = donor.labs))))
 ```
 
-## Without averages
+
+## Perform the same but without averaged cell counts
 ```{r Biomass growth efficiency, fig.height=14, fig.width=14}
 # Start with bruto production
 netproduction <- subset(df.counts, Ninetransit == 3)
@@ -1021,14 +1040,10 @@ biomass_relative_load_avg <- biomass_relative_load2 %>% group_by(Transit) %>%
 biomass_relative_load_avg <- biomass_relative_load_avg[!duplicated(biomass_relative_load_avg), ]
 
 
-
-
-
 biomass_relative_load2 <- biomass_relative_load2 %>% group_by(comb) %>% 
     summarise(Donor = Donor, Nr = Nr, Transit = Transit, Vessel = Vessel, Day = Day, Date = Date, intTransit = intTransit,
               SDbiomass = sd(Biomass), meanbiomass = mean(Biomass), SDint = sd(Int_Biomass), meanint = mean(Int_Biomass)      ) 
 biomass_relative_load2 <- biomass_relative_load2[!duplicated(biomass_relative_load2), ]
-
 
 
 df2 <- subset(biomass_relative_load2, Transit != "FS")
@@ -1047,10 +1062,6 @@ df <- rbind(df1, df2, df4, df3)
 biomass_relative_load2 <- df
 
 
-
-
-
-
 biomass_relative_CH <- mutate(netproduction2, Biomass = TotalpermL/Carbohydrate,
                                 Int_Biomass = IntactpermL/Carbohydrate)
 
@@ -1065,92 +1076,98 @@ biomass_relative_CH_avg <- biomass_relative_CH_avg[!duplicated(biomass_relative_
 ```
 
 
-DONT RUN
-```{r}
-# To export
-biomass_relative_CH2 <- biomass_relative_CH; biomass_relative_CH2$invivotransit <- biomass_relative_CH2$intTransit
-biomass_relative_CH2$Biomass_conversion <- biomass_relative_CH2$Biomass
-biomass_relative_CH2 <- subset(biomass_relative_CH2, select = c(Donor, Nr, Transit, Vessel, Day, invivotransit, Biomass_conversion))
-
-
-biomass_relative_CH2 <- biomass_relative_CH2 %>% group_by(Nr) %>% 
-  summarise(Donor = Donor, Nr = Nr, Transit = Transit, Vessel = Vessel, Day = Day, invivotransit = invivotransit, Biomass_conversion = mean(Biomass_conversion))
-
-biomass_relative_CH2 <- biomass_relative_CH2[!duplicated(biomass_relative_CH2), ]
-
-export <- merge(biomass_relative_CH2,subset(metabolites_relative_carbohydrate, select = c(Samplenumber, Acet_CH, Prop_CH, Buty_CH, SCFA_CH)),by.x="Nr",by.y="Samplenumber")
-
- setwd(paths$home); write.csv2(file="Conversion_efficiencies.csv", export)
-
-```
-
-
 
 ## Statistics
 ```{r}
-correction <- "holm"
+correction <- "holm" # Favoured statistical correction method
+
+# Calculate the cell count averages
 biomass_relative_load$comb <- paste0(biomass_relative_load$Transit, biomass_relative_load$Vessel)
-averages <- subset(biomass_relative_load, Donor !=1); averages <- subset(averages, Donor !=2)
-# averages <- subset(biomass_relative_load, Donor ==1| Donor ==2)
 averages <- averages %>% group_by(comb) %>% 
     summarise(Donor = Donor, Transit = Transit, Vessel = Vessel,  
               SDBiomass = sd(Biomass), meanbio = mean(Biomass), 
               intSDBiomass = sd(Int_Biomass), intmeanbio = mean(Int_Biomass)) 
 averages <- averages[!duplicated(averages), ]
 
-# Non parametric to 1-way ANOVA without donor separation, alternative - Kruskal-Wallis
+
+# Non-parametric 1-way ANOVA without donor separation - Kruskal-Wallis
 # Between transits
 gglist <- list(); x = 1; df.pwc <- data.frame()
-message(paste("Kruskal-Wallis tests with ",correction," correction between transit times"))
 
-  my_data <- biomass_relative_load
-  colnames(my_data)
-  
-  
-  my_data <- ungroup(my_data) #ungroup the data or you'll have problems
-  rstatix::kruskal_test(my_data, Transit ~ Biomass)
-  res.kruskal <- my_data %>% rstatix::kruskal_test(Biomass ~ Transit)
+# Print a message indicating Kruskal-Wallis tests with correction
+message(paste("Kruskal-Wallis tests with", correction, "correction between transit times"))
+
+# Prepare the data for analysis
+my_data <- biomass_relative_load; colnames(my_data)
+
+# Ungroup the data to avoid problems
+my_data <- ungroup(my_data)
+
+# Perform Kruskal-Wallis test
+rstatix::kruskal_test(my_data, Transit ~ Biomass)
+res.kruskal <- my_data %>% rstatix::kruskal_test(Biomass ~ Transit)
+
+# Calculate effect size and interpret the result with own function
+effsize <- my_data %>% kruskal_effsize(Biomass ~ Transit)
+
+if (effsize$effsize > 0.13) {
+  effsize <- paste0(", effsize =", signif(effsize$effsize, digits = 5),
+                    " (large effect size is detected)")
+} else {
+  if (effsize$effsize > 0.06) {
+    effsize <- paste0(", effsize =", signif(effsize$effsize, digits = 5),
+                      " (moderate effect size is detected)")
+  } else {
+    effsize <- paste0(", effsize =", signif(effsize$effsize, digits = 5),
+                      " (WARNING: low effect size is detected)")
+  }
+}
+
+
     
-    # Effect size The interpretation values commonly in published literature are: 
-    # 0.01- < 0.06 (small effect), 0.06 - < 0.14 (moderate    effect) and >= 0.14 (large effect).
-    effsize <- my_data %>% kruskal_effsize(Biomass ~ Transit)
-    if(effsize$effsize>0.13){
-      effsize <- paste0(", effsize= ", signif(effsize$effsize, digits = 5)," (large effect size is detected)")
-    }else{if(effsize$effsize>0.06){
-      effsize <- paste0(", effsize= ", signif(effsize$effsize, digits = 5)," (moderate effect size is detected)")
-    }else{effsize <- paste0(", effsize= ", signif(effsize$effsize, digits = 5)," (WARNING: low effect size is detected)")}}
-    
-    # Pairwise comparisons using Wilcoxon’s test:
-    pwc <- my_data %>%  wilcox_test(Biomass ~ Transit, p.adjust.method = correction, paired = F)
-    pwc <- subset(pwc, p.adj.signif != "ns")
-    pwc$Vessel <- i; pwc$Transit <- j; df.pwc <- rbind(df.pwc, pwc)
-    # print(pwc) # print pairwise comparisons
-    
-       
-    if(res.kruskal$p < 0.05){
-      message(crayon::green(paste0("Kruskal-Wallis: ",i, ", p = ",res.kruskal$p, effsize)))
-      }else{
-      message(crayon::red(paste0("Kruskal-Wallis: ",i, ", p = ",res.kruskal$p, effsize)))}
-    
-    # Visualization: box plots with p-values
-    pwc <- pwc %>% add_xy_position(x = "Transit")
-    gglist[[x]]<- ggboxplot(my_data, x = "Transit", y = "Biomass") +
-    stat_pvalue_manual(pwc, hide.ns = TRUE) +
-    labs(title = paste0("Donor ",j,", Vessel ",i),
-    subtitle = get_test_label(res.kruskal, detailed = TRUE),
-    caption = get_pwc_label(pwc))
-    ggarrange(plotlist = gglist, nrow = 1, ncol = 3)
+# Pairwise comparisons using Wilcoxon’s test
+pwc <- my_data %>% wilcox_test(Biomass ~ Transit, p.adjust.method = correction, paired = F)
+pwc <- subset(pwc, p.adj.signif != "ns")
+pwc$Vessel <- i
+pwc$Transit <- j
+df.pwc <- rbind(df.pwc, pwc)
 
+# Print pairwise comparisons if needed
+# print(pwc)
 
-df.pwc.total <- df.pwc; View(df.pwc.total) 
+# Display Kruskal-Wallis test result and effect size
+if (res.kruskal$p < 0.05) {
+  message(crayon::green(paste0("Kruskal-Wallis: ", i, ", p =", res.kruskal$p, effsize)))
+} else {
+  message(crayon::red(paste0("Kruskal-Wallis: ", i, ", p =", res.kruskal$p, effsize)))
+}
 
+# Visualization: box plots with p-values
+pwc <- pwc %>% add_xy_position(x = "Transit")
+gglist[[x]] <- ggboxplot(my_data, x = "Transit", y = "Biomass") +
+  stat_pvalue_manual(pwc, hide.ns = TRUE) +
+  labs(title = paste0("Donor ", j, ", Vessel ", i),
+       subtitle = get_test_label(res.kruskal, detailed = TRUE),
+       caption = get_pwc_label(pwc))
+ggarrange(plotlist = gglist, nrow = 1, ncol = 3)
 
+# Store pairwise comparison results in df.pwc.total
+df.pwc.total <- df.pwc
+
+# Display the stored pairwise comparison results
+View(df.pwc.total)
+
+# Grouped summary calculations
 df <- biomass_relative_load %>% group_by(Transit) %>% 
-    summarise(SDtot = sd(TotalpermL), meantot = mean(TotalpermL), SDPer = sd(Perc_intact), meanperc = mean(Perc_intact),
-      Transit = Transit, Vessel = Vessel) ; df <- df[!duplicated(df), ]
+  summarise(SDtot = sd(TotalpermL), meantot = mean(TotalpermL), 
+            SDPer = sd(Perc_intact), meanperc = mean(Perc_intact),
+            Transit = Transit, Vessel = Vessel)
+df <- df[!duplicated(df), ]
+
 ```
 
-## Plot load
+## Make plots of microbial load
+
 ```{r Biomass growth efficiency, fig.height=7, fig.width=16}
 
 Transit.labs <- c("Short SHIME transit", "Medium SHIME transit", "Long SHIME transit")
@@ -1170,8 +1187,6 @@ plotA <- papertheme(ggplot(biomass_relative_load, aes(x= Donor, y = Biomass, fil
   # ylab("Total cells relative to absolute nutrient load (cells )") + 
   ylab(expression(paste("Total cells relative to nutrient load (cells ",g^{"-1"}, d^{"-1"}, ")")))+ xlab("Donor") + 
   scale_y_continuous(limits = c(0, max + min))
-
-
 
 
 plotAbis <- papertheme(ggplot(biomass_relative_load, aes(x= Donor, y = Biomass, fill = Donor))) + 
@@ -1272,8 +1287,8 @@ comboplot <- ggarrange(
 
 comboplot
 
-saveplots()
-ggsave(plot = comboplot, width = 14, height = 14, dpi = 300, filename = "FigureS6.tiff")
+saveplots() # Change directory to save plots
+# ggsave(plot = comboplot, width = 14, height = 14, dpi = 300, filename = "FigureS6.tiff")
 
 plot_Biomass_effA <- plotA
 plot_Biomass_effB <- plotB
@@ -1292,8 +1307,7 @@ ggarrange(plot, NULL, ncol = 2, widths = c(1,0.3))
 ```
 
 
-
-## Statistics - CH
+## Statistics - carbohydrate utilisation
 ```{r}
 correction <- "holm"
 biomass_relative_CH$comb <- paste0(biomass_relative_CH$Transit, biomass_relative_CH$Vessel)
@@ -1660,7 +1674,7 @@ plotB <- papertheme(ggplot(subset(biomass_relative_CH2, Biomass >0), aes(x= Tran
   ggarrange(plotA, ggarrange(NULL, plotB, nrow = 2, heights = c(0.065,1)), ncol = 2, widths = c(1,0.5), labels = "AUTO", font.label = list(size = 20))
 ```
 
-# Figure S6 - Paperplot Carbohydrate consumption
+# Figure S7 - Paperplot net daily carbohydrate utilisation 
 ```{r Biomass growth efficiency, fig.height=5.5, fig.width=17}
 correction <- "holm"
 df.carbs <- read.csv2("Carbs_reps.csv", sep = ";")
@@ -1798,14 +1812,10 @@ plot
 
 paperplot_carbohydrateconsumptionB <- plot
 ggarrange(paperplot_carbohydrateconsumptionA, ggarrange(NULL,paperplot_carbohydrateconsumptionB, nrow = 2, heights = c(0.06,1)), ncol = 2, widths = c(1,0.5))
-
-
-
-
 ```
 
 
-
+## Checked until here!
 
 
 
@@ -2203,7 +2213,7 @@ for(i in c(1:nrow(df))){
 # Visualisation in plots
 ## Stabilised communities
 ```{r Boxplots stabilised communities, fig.height=16, fig.width=14}
-saveplots()
+saveplots() # Change directory to save plots
 # Inidividual samples
 my_comparisons <- list(c("ST", "MT"), c("MT", "LT"), c("ST", "LT"))
 df <- subset(df.counts, Transit != "FS"); df <- subset(df, Ninetransit == 3)
@@ -2360,7 +2370,9 @@ paperplot_dotplot <- plotB
 comb <- ggarrange(plot, ggarrange(NULL, plot2, nrow = 2, heights = c(0.1,1.15)), 
                   ncol = 2, widths = c(1,0.3), labels = "AUTO", font.label = list(size =20));comb
 plotA + ylab(expression(paste("Cell concentration (cells m",L^{"-1"}, ")")))
-setwd("/Projects2/Yorick/Rstudio_projects/Task1.2TransitSHIME/Data/Results/Plots")
+
+saveplots() # Change directory to save plots
+
 ggsave(plot = comb, width = 16, height = 11, dpi = 400, filename = "microbialload_stabilised_hires.tiff")
 ggsave(plot = comb, width = 16, height = 11, dpi = 100, filename = "microbialload_stabilised_lores.tiff")
 rm(dat_text, plot, plot2, df1, df2, df3, df4, df, comb)
@@ -2441,7 +2453,7 @@ ggarrange(
 
 ## Supp stabilisation period
 ```{r Stabilisation period, fig.height=10, fig.width=14}
-saveplots()
+saveplots() # Change directory to save plots
 # Individual samples
 df <- subset(by_nr, Transit != "FS"); df$Day <- as.numeric(df$Day)
 max <- max(df$meantot); min <- min(df$meantot)
@@ -2530,8 +2542,7 @@ plot <- papertheme(ggplot(df2, aes(x = Donor, y = TotalpermL, fill = Donor))+
 plot
 plotC <- plot
 paperplot_faecal <- plot
-# 
-# saveplots()
+
 # ggsave(plot = comb, width = 16, height = 11, dpi = 400, filename = "microbialload_stabilised_hires.tiff")
 # ggsave(plot = comb, width = 16, height = 11, dpi = 100, filename = "microbialload_stabilised_lores.tiff")
 
@@ -2957,7 +2968,7 @@ comboplot <- ggarrange(
           nrow=2, heights = c(1,1.2));comboplot
 
 
-saveplots()
+saveplots() # Change directory to save plots
 ggsave(plot = comboplot, width = 20, height = 13, dpi = 300, filename = "Figure1.tiff")
 ```
 
@@ -5475,7 +5486,7 @@ plotobjrdafunctcellPDF
 # leg.A <- c(0.86,0.15)
 # leg.C <- c(0.92,0.20)
 # leg.E <- c(0.86,0.1)
-saveplots()
+saveplots() # Change directory to save plots
 # ggsave(plot = comboplot, width = 10, height = 15, dpi = 300, filename = "Paperplot.RDA.Cells.png")
 # 
 # # combine with metabolites
@@ -5492,7 +5503,7 @@ comboplot <- ggarrange(ggarrange(plotobjrdafunctcellPDA1,  plotobjrdafunctcellPD
                        ncol = 3, widths = c(1,0.05,1))
 comboplot
                      
-saveplots()
+saveplots() # Change directory to save plots
 ggsave(plot = comboplot, width = 13.5, height = 15, dpi = 200, filename = "Supplementary_figure5_low_res.png")
 ggsave(plot = comboplot, width = 13.5, height = 15, dpi = 400, filename = "Supplementary_figure5_high_res.tiff")
 df.anova.cca.cell <- rbind(df.A, df.B, df.C, df.D, df.E, df.F)
