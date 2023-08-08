@@ -15,7 +15,7 @@ If you would use or build upon this code, please refer to Minnebo <i> et al.</i>
 This GitHub repository is organised to provide easy access to the code used in the analyses:
 
 - **Code**: This section holds the source code responsible for conducting the analyses detailed in the paper. Each script is thoroughly documented to help you follow the process step by step.
-
+- **Supporting code**: The main code is supported by own external scripts, such as ggplot altering codes, a bundle of colours, calculations of effect sizes...
 - **Datasets**: In cases where datasets were employed for these analyses, we have included them here. These datasets are crucial for reproducing the results and drawing further insights.
 
 ## How to Use
