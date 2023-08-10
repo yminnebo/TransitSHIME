@@ -1,6 +1,6 @@
 Welcome to the TransitSHIME GitHub Page!
 
-Here, you will find the codebase that was used to conduct the analyses presented in our published paper titled "<b>Gut microbiota response to <i>in vitro</i> transit time variation is mediated by microbial growth rates, nutrient use efficiency and adaptation to <i>in vivo</i> transit time</b>", a.k.a <b>TransitSHIME</b> This repository contains the code and configurations that were employed to generate the results and insights discussed in the paper.
+Here, you will find the codebase that was used to conduct the analyses presented in our published paper titled "<b>Gut microbiota response to <i>in vitro</i> transit time variation is mediated by microbial growth rates, nutrient use efficiency and adaptation to <i>in vivo</i> transit time</b>", a.k.a the <b>TransitSHIME</b>. We are strong supporters of the FAIR principles and find it important to share our data. Therefore, this repository contains the code and configurations that were employed to generate the results and insights discussed in the paper.
 
 ## About the Paper
 
@@ -22,19 +22,18 @@ This GitHub repository is organised to provide easy access to the code used in t
 
 If you are interested in replicating the analyses or building upon them, you can start by navigating to the `Code` directory. Inside, you will find individual scripts and markdowns that correspond to different aspects of the analyses carried out in the paper. Each script contains comments and explanations to guide you through the implementation.
 
-Just as a headsup for my code, I like to use `test` as a name for placeholders, temporary objects or dataframes. The permanent objects always get their own specific name. 
+Just as a headsup for my code, I like to use `test` as a name for placeholders, temporary objects or dataframes. The permanent/definitive objects always get their own specific name. 
 
 ### Which markdowns contain the code to which figures/results?
 
 As you can see, there are 3 markdowns in the code: `NGS_analyses.Rmd`, `FCM_analyses.Rmd` and `SCFA_analyses.Rmd`. Each of them contain codes to specific results and figures:
-* <b>FCM_analyses</b>: The code related to all flow cytometry analyses: Main figure <b>1</b>, Supplementary figures <b>S6, S7 and S8</b>
-* <b>NGS_analyses.Rmd</b>: Figure
+* <b>FCM_analyses</b>: The code related to all flow cytometry analyses AND carbohydrate utilisation. The raw flow cytometry data that has been analysed is accessible via this [Link](http://flowrepository.org/id/FR-FCM-Z5K7). The code reflects on main figure <b>1</b>, Supplementary figures <b>S6, S7 and S8</b>.
+* <b>NGS_analyses</b>: Figure
 
 
 
 Something to make your life easier: We've labeled the code sections relevant to each figure with descriptive titles. When you open the code outline, you'll immediately spot these markers, guiding you to the exact portions of code that generated the figures mentioned in the paper.
 
-The code for specific figures have also been marked inside the code as titles. Just open the outline and you'll see them clearly
 
 
 Feel free to experiment, modify, and expand upon the code as you see fit. Should you encounter any questions or obstacles, we encourage you to raise an Issue in this repository. 
@@ -43,9 +42,4 @@ Feel free to experiment, modify, and expand upon the code as you see fit. Should
 
 Happy (re)analysing!
 
-
-
-
-
-This code is finished and usable, but is currently being cleaned
-![](https://external-content.duckduckgo.com/iu/?u=http%3A%2F%2Fwww.mobygames.com%2Fimages%2Fshots%2Fl%2F292311-bob-the-builder-bob-builds-a-park-windows-screenshot-here.png&f=1&nofb=1&ipt=857c44ff17dcca40690a9a897199618bc68cdca395d59125c128114d2601ff05&ipo=images)
+Yorick <i> et al.</i>
