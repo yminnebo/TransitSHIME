@@ -26,7 +26,7 @@ Just as a headsup for my code, I like to use `test` as a name for placeholders, 
 
 ### Which markdowns contain the code to which figures/results?
 
-As you can see, there are 3 markdowns in the code: `NGS_analyses.Rmd`, `FCM_analyses.Rmd` and `SCFA_analyses.Rmd`. Each of them contain codes to specific results and figures:
+As you can see, there are 3 markdowns in the code: `FCM_analyses.Rmd`, `NGS_analyses.Rmd` and `SCFA_analyses.Rmd`. Each of them contain codes to specific results and figures:
 * <b>FCM_analyses</b>: The code related to all flow cytometry analyses AND carbohydrate utilisation. The raw flow cytometry data that has been analysed is accessible via this [Link](http://flowrepository.org/id/FR-FCM-Z5K7). The code reflects on main figure <b>1</b>, Supplementary figures <b>S6, S7 and S8</b>.
 * <b>NGS_analyses</b>: Figure
 
