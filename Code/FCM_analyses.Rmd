@@ -1525,7 +1525,7 @@ View(df.pwc.total); View(df.pwc1.total)
 
 
 
-## Paperplot biomass-carbohydrates
+## Figure 1D and 1E - biomass-carbohydrates
 ```{r Biomass growth efficiency, fig.height=7, fig.width=16}
 Transit.labs <- c("Short SHIME transit", "Med SHIME transit", "Long SHIME transit")
 names(Transit.labs) <- c("ST", "MT", "LT")
@@ -1596,10 +1596,10 @@ plotB <- papertheme(ggplot(subset(biomass_relative_CH2, Biomass >0), aes(x= Tran
   
 ggarrange(plotA, ggarrange(NULL, plotB, nrow = 2, heights = c(0.065,1)), ncol = 2, widths = c(1,0.5))
 
-paperplot_carbohydratesA <- plotA
-paperplot_carbohydratesB <- plotB
+paperplot_fig1D <- plotA
+paperplot_fig1E <- plotB
 
-ggarrange(paperplot_carbohydratesA, paperplot_carbohydratesB)
+ggarrange(paperplot_fig1D, paperplot_fig1E)
 ```
 
 # Figure S8 - Intact cells
@@ -1628,13 +1628,9 @@ plotA <- papertheme(ggplot(subset(biomass_relative_CH2, Int_Biomass >0), aes(x= 
       theme(legend.position = c(0.5, 0.09), legend.box = "horizontal", legend.title = element_text(size = 17), 
             legend.text = element_text(size = 16), legend.background = element_blank()#, strip.text.y = element_blank()
             ) +
-  # ylab(expression(paste("Total cells relative to nutrient load (cells ",g^{"-1"}, d^{"-1"}, ")")))+ 
-  # ylab(bquote(atop("Net intact cell production", "(cells " ~ g^-1 ~ " net carbohydrate consumption)"))) +
-  # ylab(bquote(atop("Net carbohydrate-to-intact cell efficiency ", "(cells " ~ g^-1 ~ day^-1~")"))) +
-  # ylab(bquote(atop("Net carbohydrate-to-intact cell conversion ", "(cells " ~ g^-1 ~ day^-1~")"))) +
+  
   ylab(bquote(atop("Net carbohydrate-to-intact cell", " conversion (cells " ~ g^-1 ~ ")"))) +
-   # ylab(expression(paste("Net carbohydrate-to-intact cell conversion (cells ",g^{"-1"}, ")")))+
-  # ylab(bquote(atop("Net total cell production"~ "(cells " ~ g["carbohydrate consumption"]^-1~")"))) +
+  
   xlab("Donor") 
 # plotA
 
@@ -1660,17 +1656,12 @@ plotB <- papertheme(ggplot(subset(biomass_relative_CH2, Biomass >0), aes(x= Tran
             legend.text = element_text(size = 16), legend.background = element_blank()#, 
             # axis.text.y = element_blank(), axis.ticks.y = element_blank(), axis.title.y = element_blank()
             ) +
-  # ylab(expression(paste("Net total cells relative to nutrient load (cells ",g^{"-1"}, d^{"-1"}, ")")))+
-  # ylab(bquote(atop("Net intact cell production", "(cells " ~ g^-1 ~ " net carbohydrate consumption)"))) +
-  # ylab(bquote(atop("Net carbohydrate-to-intact cell efficiency ", "(cells " ~ g^-1 ~ day^-1~")")))
+  
   ylab(bquote(atop("Net carbohydrate-to-intact cell", "conversion (cells " ~ g^-1~")")))+
-  # ylab(expression(paste("Net carbohydrate-to-intact cell conversion (cells ",g^{"-1"}, ")")))+
-  # ylab(bquote(atop("Net carbohydrate-to-intact cell conversion "~ "(cells " ~ g^-1 ~ ")"))) +
+  
   xlab("SHIME transit time")+ scale_x_discrete(labels= c("Short", "Medium", "Long")) + 
   geom_text(data= dat_text,  mapping = aes(x = factor(Transit), y = as.numeric(value), label = label, family = 'sans'), size = 7) 
-  # plotB
-  
-  
+    
   ggarrange(plotA, ggarrange(NULL, plotB, nrow = 2, heights = c(0.065,1)), ncol = 2, widths = c(1,0.5), labels = "AUTO", font.label = list(size = 20))
 ```
 
@@ -1813,9 +1804,6 @@ plot
 paperplot_carbohydrateconsumptionB <- plot
 ggarrange(paperplot_carbohydrateconsumptionA, ggarrange(NULL,paperplot_carbohydrateconsumptionB, nrow = 2, heights = c(0.06,1)), ncol = 2, widths = c(1,0.5))
 ```
-
-
-## Checked until here!
 
 
 
@@ -2020,10 +2008,6 @@ for (i in c("P", "D")) {
 ggarrange(plotlist = gglist, nrow = 2, ncol = 3)
 
 
-Checked here
-
-
-
 # Non parametric to 1-way ANOVA without donor separation, alternative - Kruskal-Wallis
 # Between transits
 gglist <- list(); x = 1; df.pwc <- data.frame()
@@ -2065,161 +2049,263 @@ for (i in c("P", "D")) {
     caption = get_pwc_label(pwc))
     x = x +1}; ggarrange(plotlist = gglist, nrow = 4, ncol = 3)
 
-# Between vessels
-gglist <- list(); x = 1; df.pwc1 <- data.frame()
-message(paste("Kruskal-Wallis tests with ",correction," correction between vessels"))
-  for (j in c("ST", "MT", "LT")) {
-    my_data2 <- subset(df.counts, Transit == j); my_data2 <- subset(my_data2, Ninetransit == 3)
-    res.kruskal <- my_data2 %>% rstatix::kruskal_test(TotalpermL ~ Vessel)
-    test1<- subset(my_data2, Vessel == "P"); test<- subset(my_data2, Vessel == "D")
-    # Effect size The interpretation values commonly in published literature are: 
-    # 0.01- < 0.06 (small effect), 0.06 - < 0.14 (moderate    effect) and >= 0.14 (large effect).
-    effsize <- my_data2 %>% kruskal_effsize(TotalpermL ~ Vessel)
-    if(effsize$effsize>0.13){
-      effsize <- paste0(", effsize= ", signif(effsize$effsize, digits = 5)," (large effect size is detected)")
-    }else{if(effsize$effsize>0.06){ 
-      effsize <- paste0(", effsize= ", signif(effsize$effsize, digits = 5)," (moderate effect size is detected)")
-    }else{effsize <- paste0(", effsize= ", signif(effsize$effsize, digits = 5)," (WARNING: low effect size is detected)")}}
-    
-    # Pairwise comparisons using Wilcoxon’s test:
-    pwc <- my_data2 %>%  wilcox_test(TotalpermL ~ Vessel, p.adjust.method = "bonferroni", paired = F)
-    pwc <- subset(pwc, p != "ns")
-    pwc$Vessel <- i; pwc$Transit <- j; df.pwc1 <- rbind(df.pwc1, pwc)
-    # print(pwc) # print pairwise comparisons
-    
-       
-    if(res.kruskal$p < 0.05){
-      message(crayon::green(paste0("Kruskal-Wallis: Transit ",j,", p = ",res.kruskal$p, effsize)))
-      }else{
-      message(crayon::red(paste0("Kruskal-Wallis: Transit ",j,", p = ",res.kruskal$p, effsize)))}
-    
-    # Visualization: box plots with p-values
-    pwc <- pwc %>% add_xy_position(x = "Vessel")
-    gglist[[x]]<- ggboxplot(my_data2, x = "Vessel", y = "TotalpermL") +
+# Between transits
+gglist <- list()
+x <- 1
+df.pwc <- data.frame()
+
+message(paste("Kruskal-Wallis tests with ", correction, " correction between transit times"))
+
+for (i in c("P", "D")) {
+  my_data <- subset(df.counts, Vessel == i)
+  my_data <- subset(my_data, Ninetransit == 3)
+  
+  if (i == "P") {
+    i_label <- "Proximal colon"
+  } else if (i == "D") {
+    i_label <- "Distal colon"
+  }
+  
+  my_data2 <- my_data
+  res.kruskal <- my_data2 %>% rstatix::kruskal_test(TotalpermL ~ Transit)
+  
+  effsize <- my_data2 %>% kruskal_effsize(TotalpermL ~ Transit)
+  if (effsize$effsize > 0.13) {
+    effsize_label <- paste0(", effect size = ", signif(effsize$effsize, digits = 5), " (large effect)")
+  } else if (effsize$effsize > 0.06) {
+    effsize_label <- paste0(", effect size = ", signif(effsize$effsize, digits = 5), " (moderate effect)")
+  } else {
+    effsize_label <- paste0(", effect size = ", signif(effsize$effsize, digits = 5), " (low effect)")
+  }
+  
+  pwc <- my_data2 %>% wilcox_test(TotalpermL ~ Transit, p.adjust.method = correction, paired = FALSE)
+  pwc <- subset(pwc, p.adj.signif != "ns")
+  pwc$Vessel <- i_label
+  pwc$Transit <- j
+  df.pwc <- rbind(df.pwc, pwc)
+  
+  if (res.kruskal$p < 0.05) {
+    kruskal_result <- crayon::green(paste0("Kruskal-Wallis: ", i_label, ", p =", res.kruskal$p, effsize_label))
+  } else {
+    kruskal_result <- crayon::red(paste0("Kruskal-Wallis: ", i_label, ", p =", res.kruskal$p, effsize_label))
+  }
+  message(kruskal_result)
+  
+  pwc <- pwc %>% add_xy_position(x = "Transit")
+  gglist[[x]] <- ggboxplot(my_data2, x = "Transit", y = "TotalpermL") +
     stat_pvalue_manual(pwc, hide.ns = TRUE) +
-    labs(title = paste0("Transit ",j,", Vessel ",i),
-    subtitle = get_test_label(res.kruskal, detailed = TRUE),
-    caption = get_pwc_label(pwc))
-    x = x +1}; ggarrange(plotlist = gglist, nrow = 2, ncol = 3)
-df.pwc.total <- df.pwc; df.pwc1.total <- df.pwc1
-View(df.pwc.total); View(df.pwc1.total)
+    labs(title = paste0("Donor ", j, ", Vessel ", i_label),
+         subtitle = get_test_label(res.kruskal, detailed = TRUE),
+         caption = get_pwc_label(pwc))
+  x <- x + 1
+}
+
+ggarrange(plotlist = gglist, nrow = 4, ncol = 3)
 
 
-message(crayon::blue("Percentage intact cells"))
+# Between vessels
+gglist <- list()
+x <- 1
+df.pwc1 <- data.frame()
+
+message(paste("Kruskal-Wallis tests with ", correction, " correction between vessels"))
+
+for (j in c("ST", "MT", "LT")) {
+  my_data2 <- subset(df.counts, Transit == j)
+  my_data2 <- subset(my_data2, Ninetransit == 3)
+  
+  res.kruskal <- my_data2 %>% rstatix::kruskal_test(TotalpermL ~ Vessel)
+  test1 <- subset(my_data2, Vessel == "P")
+  test <- subset(my_data2, Vessel == "D")
+  
+  effsize <- my_data2 %>% kruskal_effsize(TotalpermL ~ Vessel)
+  if (effsize$effsize > 0.13) {
+    effsize_label <- paste0(", effect size = ", signif(effsize$effsize, digits = 5), " (large effect)")
+  } else if (effsize$effsize > 0.06) {
+    effsize_label <- paste0(", effect size = ", signif(effsize$effsize, digits = 5), " (moderate effect)")
+  } else {
+    effsize_label <- paste0(", effect size = ", signif(effsize$effsize, digits = 5), " (low effect)")
+  }
+  
+  pwc <- my_data2 %>% wilcox_test(TotalpermL ~ Vessel, p.adjust.method = "bonferroni", paired = FALSE)
+  pwc <- subset(pwc, p != "ns")
+  pwc$Vessel <- i
+  pwc$Transit <- j
+  df.pwc1 <- rbind(df.pwc1, pwc)
+  
+  if (res.kruskal$p < 0.05) {
+    kruskal_result <- crayon::green(paste0("Kruskal-Wallis: Transit ", j, ", p =", res.kruskal$p, effsize_label))
+  } else {
+    kruskal_result <- crayon::red(paste0("Kruskal-Wallis: Transit ", j, ", p =", res.kruskal$p, effsize_label))
+  }
+  message(kruskal_result)
+  
+  pwc <- pwc %>% add_xy_position(x = "Vessel")
+  gglist[[x]] <- ggboxplot(my_data2, x = "Vessel", y = "TotalpermL") +
+    stat_pvalue_manual(pwc, hide.ns = TRUE) +
+    labs(title = paste0("Transit ", j, ", Vessel ", i),
+         subtitle = get_test_label(res.kruskal, detailed = TRUE),
+         caption = get_pwc_label(pwc))
+  x <- x + 1
+}
+
+ggarrange(plotlist = gglist, nrow = 2, ncol = 3)
+
+df.pwc.total <- df.pwc
+df.pwc1.total <- df.pwc1
+View(df.pwc.total)
+View(df.pwc1.total)
+
 
 # PERCENTAGE INTACT CELLS
+message(crayon::blue("Percentage intact cells"))
 # Non parametric to 1-way ANOVA without donor separation, alternative - Kruskal-Wallis
 # Between transits
 message(crayon::blue("Between transits"))
-gglist <- list(); x = 1; df.pwc <- data.frame()
-message(paste("Kruskal-Wallis tests with ",correction," correction between transit times"))
+gglist <- list()
+x <- 1
+df.pwc <- data.frame()
+
+message(paste("Kruskal-Wallis tests with ", correction, " correction between transit times"))
+
 for (i in c("P", "D")) {
-  my_data <- subset(df.counts, Vessel == i); my_data <- subset(my_data, Ninetransit == 3)
-  if(i == "P"){i = "Proximal colon"}; if(i == "D"){i = "Distal colon"}
+  my_data <- subset(df.counts, Vessel == i)
+  my_data <- subset(my_data, Ninetransit == 3)
   
-    my_data2 <- my_data
-    res.kruskal <- my_data2 %>% rstatix::kruskal_test(Perc_intact ~ Transit)
-    
-    # Effect size The interpretation values commonly in published literature are: 
-    # 0.01- < 0.06 (small effect), 0.06 - < 0.14 (moderate    effect) and >= 0.14 (large effect).
-    effsize <- my_data2 %>% kruskal_effsize(Perc_intact ~ Transit)
-    if(effsize$effsize>0.13){
-      effsize <- paste0(", effsize= ", signif(effsize$effsize, digits = 5)," (large effect size is detected)")
-    }else{if(effsize$effsize>0.06){
-      effsize <- paste0(", effsize= ", signif(effsize$effsize, digits = 5)," (moderate effect size is detected)")
-    }else{effsize <- paste0(", effsize= ", signif(effsize$effsize, digits = 5)," (WARNING: low effect size is detected)")}}
-    
-    # Pairwise comparisons using Wilcoxon’s test:
-    pwc <- my_data2 %>%  wilcox_test(Perc_intact ~ Transit, p.adjust.method = correction, paired = F)
-    pwc <- subset(pwc, p.adj.signif != "ns")
-    pwc$Vessel <- i; pwc$Transit <- j; df.pwc <- rbind(df.pwc, pwc)
-    # print(pwc) # print pairwise comparisons
-    
-       
-    if(res.kruskal$p < 0.05){
-      message(crayon::green(paste0("Kruskal-Wallis: ",i, ", p = ",res.kruskal$p, effsize)))
-      }else{
-      message(crayon::red(paste0("Kruskal-Wallis: ",i, ", p = ",res.kruskal$p, effsize)))}
-    
-    # Visualization: box plots with p-values
-    pwc <- pwc %>% add_xy_position(x = "Transit")
-    gglist[[x]]<- ggboxplot(my_data2, x = "Transit", y = "Perc_intact") +
+  if (i == "P") {
+    i_label <- "Proximal colon"
+  } else if (i == "D") {
+    i_label <- "Distal colon"
+  }
+  
+  my_data2 <- my_data
+  res.kruskal <- my_data2 %>% rstatix::kruskal_test(Perc_intact ~ Transit)
+  
+  effsize <- my_data2 %>% kruskal_effsize(Perc_intact ~ Transit)
+  if (effsize$effsize > 0.13) {
+    effsize_label <- paste0(", effect size = ", signif(effsize$effsize, digits = 5), " (large effect)")
+  } else if (effsize$effsize > 0.06) {
+    effsize_label <- paste0(", effect size = ", signif(effsize$effsize, digits = 5), " (moderate effect)")
+  } else {
+    effsize_label <- paste0(", effect size = ", signif(effsize$effsize, digits = 5), " (low effect)")
+  }
+  
+  pwc <- my_data2 %>% wilcox_test(Perc_intact ~ Transit, p.adjust.method = correction, paired = FALSE)
+  pwc <- subset(pwc, p.adj.signif != "ns")
+  pwc$Vessel <- i_label
+  pwc$Transit <- j
+  df.pwc <- rbind(df.pwc, pwc)
+  
+  if (res.kruskal$p < 0.05) {
+    kruskal_result <- crayon::green(paste0("Kruskal-Wallis: ", i_label, ", p =", res.kruskal$p, effsize_label))
+  } else {
+    kruskal_result <- crayon::red(paste0("Kruskal-Wallis: ", i_label, ", p =", res.kruskal$p, effsize_label))
+  }
+  message(kruskal_result)
+  
+  pwc <- pwc %>% add_xy_position(x = "Transit")
+  gglist[[x]] <- ggboxplot(my_data2, x = "Transit", y = "Perc_intact") +
     stat_pvalue_manual(pwc, hide.ns = TRUE) +
-    labs(title = paste0("Donor ",j,", Vessel ",i),
-    subtitle = get_test_label(res.kruskal, detailed = TRUE),
-    caption = get_pwc_label(pwc))
-    x = x +1}; ggarrange(plotlist = gglist, nrow = 4, ncol = 3)
+    labs(title = paste0("Donor ", j, ", Vessel ", i_label),
+         subtitle = get_test_label(res.kruskal, detailed = TRUE),
+         caption = get_pwc_label(pwc))
+  x <- x + 1
+}
+
+ggarrange(plotlist = gglist, nrow = 4, ncol = 3)
 
 # Between vessels
 message(crayon::blue("Between vessels"))
-gglist <- list(); x = 1; df.pwc1 <- data.frame()
-message(paste("Kruskal-Wallis tests with ",correction," correction between vessels"))
-  for (j in c("ST", "MT", "LT")) {
-    my_data2 <- subset(df.counts, Transit == j); my_data2 <- subset(my_data2, Ninetransit == 3)
-    res.kruskal <- my_data2 %>% rstatix::kruskal_test(Perc_intact ~ Vessel)
-    test1<- subset(my_data2, Vessel == "P"); test<- subset(my_data2, Vessel == "D")
-    # Effect size The interpretation values commonly in published literature are: 
-    # 0.01- < 0.06 (small effect), 0.06 - < 0.14 (moderate    effect) and >= 0.14 (large effect).
-    effsize <- my_data2 %>% kruskal_effsize(Perc_intact ~ Vessel)
-    if(effsize$effsize>0.13){
-      effsize <- paste0(", effsize= ", signif(effsize$effsize, digits = 5)," (large effect size is detected)")
-    }else{if(effsize$effsize>0.06){ 
-      effsize <- paste0(", effsize= ", signif(effsize$effsize, digits = 5)," (moderate effect size is detected)")
-    }else{effsize <- paste0(", effsize= ", signif(effsize$effsize, digits = 5)," (WARNING: low effect size is detected)")}}
-    
-    # Pairwise comparisons using Wilcoxon’s test:
-    pwc <- my_data2 %>%  wilcox_test(Perc_intact ~ Vessel, p.adjust.method = "bonferroni", paired = F)
-    pwc <- subset(pwc, p != "ns")
-    pwc$Vessel <- i; pwc$Transit <- j; df.pwc1 <- rbind(df.pwc1, pwc)
-    # print(pwc) # print pairwise comparisons
-    
-       
-    if(res.kruskal$p < 0.05){
-      message(crayon::green(paste0("Kruskal-Wallis: Transit ",j,", p = ",res.kruskal$p, effsize)))
-      }else{
-      message(crayon::red(paste0("Kruskal-Wallis: Transit ",j,", p = ",res.kruskal$p, effsize)))}
-    
-    # Visualization: box plots with p-values
-    pwc <- pwc %>% add_xy_position(x = "Vessel")
-    gglist[[x]]<- ggboxplot(my_data2, x = "Vessel", y = "Perc_intact") +
+gglist <- list()
+x <- 1
+df.pwc1 <- data.frame()
+
+message(paste("Kruskal-Wallis tests with ", correction, " correction between vessels"))
+
+for (j in c("ST", "MT", "LT")) {
+  my_data2 <- subset(df.counts, Transit == j)
+  my_data2 <- subset(my_data2, Ninetransit == 3)
+  
+  res.kruskal <- my_data2 %>% rstatix::kruskal_test(Perc_intact ~ Vessel)
+  test1 <- subset(my_data2, Vessel == "P")
+  test <- subset(my_data2, Vessel == "D")
+  
+  effsize <- my_data2 %>% kruskal_effsize(Perc_intact ~ Vessel)
+  if (effsize$effsize > 0.13) {
+    effsize_label <- paste0(", effect size = ", signif(effsize$effsize, digits = 5), " (large effect)")
+  } else if (effsize$effsize > 0.06) {
+    effsize_label <- paste0(", effect size = ", signif(effsize$effsize, digits = 5), " (moderate effect)")
+  } else {
+    effsize_label <- paste0(", effect size = ", signif(effsize$effsize, digits = 5), " (low effect)")
+  }
+  
+  pwc <- my_data2 %>% wilcox_test(Perc_intact ~ Vessel, p.adjust.method = "bonferroni", paired = FALSE)
+  pwc <- subset(pwc, p != "ns")
+  pwc$Vessel <- i
+  pwc$Transit <- j
+  df.pwc1 <- rbind(df.pwc1, pwc)
+  
+  if (res.kruskal$p < 0.05) {
+    kruskal_result <- crayon::green(paste0("Kruskal-Wallis: Transit ", j, ", p =", res.kruskal$p, effsize_label))
+  } else {
+    kruskal_result <- crayon::red(paste0("Kruskal-Wallis: Transit ", j, ", p =", res.kruskal$p, effsize_label))
+  }
+  message(kruskal_result)
+  
+  pwc <- pwc %>% add_xy_position(x = "Vessel")
+  gglist[[x]] <- ggboxplot(my_data2, x = "Vessel", y = "Perc_intact") +
     stat_pvalue_manual(pwc, hide.ns = TRUE) +
-    labs(title = paste0("Transit ",j,", Vessel ",i),
-    subtitle = get_test_label(res.kruskal, detailed = TRUE),
-    caption = get_pwc_label(pwc))
-    x = x +1}; ggarrange(plotlist = gglist, nrow = 2, ncol = 3)
-View(df.pwc); View(df.pwc1)
+    labs(title = paste0("Transit ", j, ", Vessel ", i),
+         subtitle = get_test_label(res.kruskal, detailed = TRUE),
+         caption = get_pwc_label(pwc))
+  x <- x + 1
+}
 
+ggarrange(plotlist = gglist, nrow = 2, ncol = 3)
 
+View(df.pwc)
+View(df.pwc1)
 
-
-
-
-rm(pwc, effsize, gglist,res.kruskal,my_data2)
+rm(pwc, effsize, gglist, res.kruskal, my_data2)
 ```
 
-## Average numbers
+
+## Calculate averages
 ```{r Average numbers}
-  df <- subset(df.counts, Ninetransit == 3); df$comb <- paste0(df$Transit, df$Vessel)
-# df<-subset(df, Donor == 2| Donor ==1)
-# df<-subset(df, Donor != 1);  df<-subset(df, Donor != 2)
+# Calculate mean and standard deviation for each combination
+df <- subset(df.counts, Ninetransit == 3)
+df$comb <- paste0(df$Transit, df$Vessel)
+
 df5 <- df
-df <- df %>% group_by(comb) %>% 
-    summarise(SDtot = sd(TotalpermL), meantot = mean(TotalpermL), SDPer = sd(Perc_intact), meanperc = mean(Perc_intact),
-      Transit = Transit, Vessel = Vessel) ; df <- df[!duplicated(df), ]
-for(i in c(1:nrow(df))){
+df <- df %>%
+  group_by(comb) %>%
+  summarise(
+    SDtot = sd(TotalpermL),
+    meantot = mean(TotalpermL),
+    SDPer = sd(Perc_intact),
+    meanperc = mean(Perc_intact),
+    Transit = Transit,
+    Vessel = Vessel
+  )
+df <- df[!duplicated(df), ]
+
+for (i in 1:nrow(df)) {
   df2 <- df[i,]
-  message(paste0("Transit: ",df2$Transit,", Vessel: ", df2$Vessel, " ",
-                 format(df2$meantot,scientific = T), " +- ",format(df2$SDtot, scientific = T)))
+  message(paste0("Transit: ", df2$Transit, ", Vessel: ", df2$Vessel, " ",
+                 format(df2$meantot, scientific = TRUE), " +- ", format(df2$SDtot, scientific = TRUE)))
 }
 
 # Calculate covariance for error propagation
-df3 <- data.frame(); df2 <- df5
-PST = subset(subset(df2, Vessel == "P" & Transit == "ST"), select = TotalpermL)
-PMT = subset(subset(df2, Vessel == "P" & Transit == "MT"), select = TotalpermL)
-PLT = subset(subset(df2, Vessel == "P" & Transit == "LT"), select = TotalpermL)
-DST = subset(subset(df2, Vessel == "D" & Transit == "ST"), select = TotalpermL)
-DMT = subset(subset(df2, Vessel == "D" & Transit == "MT"), select = TotalpermL)
-DLT = subset(subset(df2, Vessel == "D" & Transit == "LT"), select = TotalpermL)
+df3 <- data.frame()
+df2 <- df5
+
+PST <- subset(subset(df2, Vessel == "P" & Transit == "ST"), select = TotalpermL)
+PMT <- subset(subset(df2, Vessel == "P" & Transit == "MT"), select = TotalpermL)
+PLT <- subset(subset(df2, Vessel == "P" & Transit == "LT"), select = TotalpermL)
+DST <- subset(subset(df2, Vessel == "D" & Transit == "ST"), select = TotalpermL)
+DMT <- subset(subset(df2, Vessel == "D" & Transit == "MT"), select = TotalpermL)
+DLT <- subset(subset(df2, Vessel == "D" & Transit == "LT"), select = TotalpermL)
+
 min <- min(nrow(PST), nrow(PMT), nrow(PLT))
 PST <- PST[1:min,]; PMT <- PMT[1:min,]; PLT <- PLT[1:min,]
 COVPSL <- abs(cov(PST,PLT)); COVPSM <- abs(cov(PST,PMT)); COVPML <- abs(cov(PLT,PMT))  
@@ -2240,6 +2326,7 @@ dfP <- mutate(dfP, SDpropSTLT = (abs(LTST)*sqrt((SDST/STP)^2 + (SDLT/LTP)^2 - 2*
 
 min <- min(nrow(DST), nrow(DMT), nrow(DLT))
 DST <- DST[1:min,]; DMT <- DMT[1:min,]; DLT <- DLT[1:min,]
+
 COVDSL <- abs(cov(DST,DLT)); COVDSM <- abs(cov(DMT,DST)); COVDML <- abs(cov(DLT,DMT))
 dfD <- data.frame(t(subset(df, Vessel == "D"))) ; dfD <- janitor::row_to_names(dfD, row_number = 1)
 dfDSD <- dfD[1,]; dfD <- dfD[2,]
@@ -2264,11 +2351,10 @@ df <- rbind(dfP, dfD)
 message("Ratio in counts")
 df
 
-
-
 df <- df %>% group_by(Vessel) %>% 
     summarise(SDtot = sd(TotalpermL), meantot = mean(TotalpermL),
       Vessel = Vessel) ; df <- df[!duplicated(df), ]
+
 for(i in c(1:nrow(df))){
   df2 <- df[i,]
   message(paste0("Transit: ",df2$Transit,", Vessel: ", df2$Vessel, " ",
@@ -2297,15 +2383,19 @@ plot <- papertheme(ggplot(df, aes(x = Transit, y = TotalpermL, fill = Transit))+
                      label.y = c(max-min, max-min, max)) + # Add significance levels
   ylab(expression(paste("Microbial load (cells m",L^{"-1"}, ")"))) + xlab("Transit time")
 plot
+
 plot <- plot + theme(legend.position = "none")
+
 ## Combine top label rows
 plot2 <- Fusetoplayer(plot)
 plot2
 ggsave(plot = plot2, width = 16, height = 10, dpi = 400, filename = "microbialload_hires.tiff")
 ggsave(plot = plot2, width = 16, height = 10, dpi = 100, filename = "microbialload_lores.tiff")
+
 # tiff(file="microbialload_hires.tiff", width=16, height=10, units="in",res=400)
 # grid.newpage();grid.draw(pgNew)
 # dev.off()
+
 # Percentage plot
 max <- max(df$Perc_intact); min <- min(df$Perc_intact)
 plot1 <- papertheme(ggplot(df, aes(x = Transit, y = Perc_intact, fill = Transit))+ 
@@ -2323,6 +2413,7 @@ plot1 <- papertheme(ggplot(df, aes(x = Transit, y = Perc_intact, fill = Transit)
 plot1
 plot1<- plot1 + theme(legend.position = c(0.92,0.11), legend.text = element_text(size = 17),
                       legend.title = element_text(size=18)); plot1
+
 ## Combine top label rows
 ### Get the ggplot grob
 pg = ggplotGrob(plot1)
@@ -2337,9 +2428,11 @@ newStrip  = gtable(widths = unit(rep(1, 6), "null"), heights = strip[[1]]$height
 cols <- seq(1, by = 2, length.out = 3) # seq(start, by = panels under this row, length.out = panel amount)
 newStrip <- gtable_add_grob(newStrip, 
          lapply(strip[cols], `[`, 1), t = 1, l = cols, r = cols + 1) #r = cols + panels under row
+
 # Put the strip into the plot
 pgNew1 <- gtable_add_grob(pg, newStrip, t = 7, l = 5, r = 15)
 class(pgNew1)
+
 # Draw the plot
 # p<- grid.newpage();
 plot3 <- ggdraw() + draw_grob(pgNew1); plot3
@@ -2352,6 +2445,7 @@ rm(plot2, plot3)
 # grid.newpage();grid.draw(pgNew1)
 # dev.off()
 # grid
+
 # Combine in one plot
 comboplot <- ggdraw() + draw_grob(pgNew, height = 0.5, y = 0.5) + 
   draw_grob(pgNew1, height = 0.5, width = (1-0.035), x = 0.035, y = 0); comboplot
@@ -2363,7 +2457,7 @@ rm(comboplot1, comboplot2)
 ggsave(plot = comboplot, width = 16, height = 20, dpi = 300, filename = "paperplot_fcm_comboplot.tiff")
 ```
 
-# Figure S7 - Stabilised community
+# Plot Stabilised community
 ```{r Paperplot dotplot, fig.height=6, fig.width=16}
 # Create means for dotplot
 df <- subset(by_nr, Transit != "FS"); df <- subset(df, Ninetransit == 3)
@@ -2445,7 +2539,7 @@ rm(dat_text, plot, plot2, df1, df2, df3, df4, df, comb)
 ```
 
 
-## Paperplot percentages
+## Figure 1F - Percentages
 ```{r Paperplot dotplot, fig.height=17.5, fig.width=20}
 # Create means for dotplot
 df <- subset(by_nr, Transit != "FS"); df <- subset(df, Ninetransit == 3)
@@ -2503,7 +2597,7 @@ c(max-(min),max, max+(min))
   ylab("Intact microbial cells (%)") + xlab("SHIME transit time")
 plot2
 plotE <- plot2
-paperplot_percentages <- plotE
+paperplot_fig1F <- plotE
 
 
 ggarrange(
@@ -2561,7 +2655,7 @@ ggsave(plot = plot, width = 16, height = 10, dpi = 400, filename = "microbialloa
 ggsave(plot = plot, width = 16, height = 10, dpi = 100, filename = "microbialload_stabilisation_lores.tiff")
 ```
 
-## Paperplot Faecal
+## Figure 1C - Faecal
 ```{r Paperplot faecal samples, fig.height=8, fig.width=12}
 # Create means for dotplot
 df <- subset(by_nr, Day == 0)
@@ -2583,20 +2677,6 @@ df2$xtratransit <- as.ordered(factor(df2$xtratransit,
               levels=c("Short transit \n donor", "Med transit \n donor", "Long transit \n donor")))
 
 
-# df2.1 <- subset(df2, intTransit == "Long transit donor")
-# df2.1$xtratransit <- paste("Long",lblinvivo,"\n transit")
-# df2.2 <- subset(df2, intTransit == "Medium transit donor"); 
-# df2.2$xtratransit <- paste("Medium",lblinvivo,"\n transit")
-# df2.3 <- subset(df2, intTransit == "Short transit donor"); 
-# df2.3$xtratransit <- paste("Short",lblinvivo,"\n transit")
-# 
-# df2 <- rbind(df2.1, df2.2, df2.3); unique(df2$xtratransit)
-# df2$xtratransit <- as.ordered(factor(df2$xtratransit,
-#               levels=c(paste("Short",lblinvivo,"\n transit"), 
-#                        paste("Medium",lblinvivo,"\n transit"), 
-#                        paste("Long",lblinvivo,"\n transit"))))
-
-
 plot <- papertheme(ggplot(df2, aes(x = Donor, y = TotalpermL, fill = Donor))+ 
              geom_boxplot(color = "black"))  +
              scale_fill_manual(values = sixdonors) +
@@ -2607,11 +2687,7 @@ plot <- papertheme(ggplot(df2, aes(x = Donor, y = TotalpermL, fill = Donor))+
   ylab(expression(paste("Faecal cell concentration (cells ",g^{"-1"}, ")"))) + xlab("Donor")
 plot
 plotC <- plot
-paperplot_faecal <- plot
-
-# ggsave(plot = comb, width = 16, height = 11, dpi = 400, filename = "microbialload_stabilised_hires.tiff")
-# ggsave(plot = comb, width = 16, height = 11, dpi = 100, filename = "microbialload_stabilised_lores.tiff")
-
+paperplot_fig1C <- plot
 
 ## Check for correlations
 df <- subset(df2, Donor == 1); df$Corntransit <- 21; df$cornmean <- 20; df$BSS <- 4
@@ -2645,7 +2721,6 @@ plot+
             parse = TRUE, hjust = 0) +
   geom_text(x = 18, y = 4.5e+11, size = 7, colour = "#666666", family='sans', label = rho_text, parse = TRUE, hjust = 0)  
 
-?cca()
 rm(rhot) 
 rhot <- cor.test(log(df$cornmean), df$TotalpermL, method = 'spearman')
 rhot <- format(as.numeric(rhot$estimate[[1]]), digits = 3)
@@ -2671,8 +2746,6 @@ plot+
   geom_text(x = 11, y = 4.5e+11, size = 7, colour = "#666666", family='sans', label = rho_text, parse = TRUE, hjust = 0)  
 
 
-
-
 rhot <- cor.test(df$BSS, df$Corntransit, method = 'spearman')
 rhot <- format(as.numeric(rhot$estimate[[1]]), digits = 3)
 rho_text <- expression(paste("Spearman's ", rho, " = -0.90; ","p = 1.77E-06"))
@@ -2696,8 +2769,6 @@ papertheme(ggplot(df, aes(x = as.numeric(BSS), y = as.numeric(Corntransit), colo
   theme(legend.position = c(0.1,0.25), legend.direction = "vertical")+
   geom_text(x = 2.7, y = 75, size = 7, colour = "#666666", family='sans', label = rho_text, parse = TRUE, hjust = 0) 
 
-
-# rm(df, df2, df5)
 ```
 
 ## Conversion of BSS
@@ -2722,10 +2793,6 @@ plot <- papertheme(ggplot(df2, aes(x = Donor, y = TotalpermL, fill = Donor))+
   ylab(expression(paste("Cell concentration (cells ",g^{"-1"}, ")"))) + xlab("Donor")
 plot
 plotC <- plot
-# 
-# saveplots()
-# ggsave(plot = comb, width = 16, height = 11, dpi = 400, filename = "microbialload_stabilised_hires.tiff")
-# ggsave(plot = comb, width = 16, height = 11, dpi = 100, filename = "microbialload_stabilised_lores.tiff")
 
 
 ## Check for correlations
@@ -2763,7 +2830,7 @@ plot+
 
 ```
 
-# Paperplot Correlation
+# Figure 1A - Correlation
 ```{r fig.height=7.5, fig.width=10}
 library(caret)
 df <- subset(counts, Ninetransit == 3)
@@ -2853,183 +2920,30 @@ plotD <-  papertheme(ggplot(df, aes(x = as.numeric(TT), y = as.numeric(Totalperm
   geom_text(data= dat_text,  mapping = aes(x = as.numeric(TT), y = as.numeric(value), label = label), family = 'sans', colour = "#474747", size = 6, parse = TRUE, vjust = 0) +
   geom_text(x = 7, y = 5e+09, size = 7, colour = "#666666", family='sans', label = rho_text, parse = TRUE, hjust = 0)  
 plotD
-paperplot_correlation <- plotD
-```
-
-## Dont run - polynomial
-```{r fig.height=7.5, fig.width=10}
-# Polynomial
-lm(TotalpermL ~ TT + I(TT^2), data = df) %>% summary()
-lm(TT ~ TotalpermL + I(TotalpermL^2), data = df) %>% summary()
-lm(TotalpermL ~ poly(TT, 2, raw = TRUE), data = df) %>%  summary()
-
-# Check how many iterations are significant. After that make number lower
-lm(TotalpermL ~ poly(TT, 4, raw = TRUE), data = df) %>%  summary()
-
-
-# Build the model
-model <- lm(TotalpermL ~ poly(TT, 5, raw = TRUE), data = df)
-# Make predictions
-predictions <- model %>% predict(df)
-# Model performance
-data.frame(
-  RMSE = RMSE(predictions, df$TotalpermL),
-  R2 = R2(predictions, df$TotalpermL)
-)
-
-
-papertheme(ggplot(df, aes(x = as.numeric(TT), y = as.numeric(TotalpermL))) + geom_boxplot(aes(fill = TransitT)) + 
-               geom_jitter(aes(color = Donor, alpha = 0.8))) + 
-  scale_color_manual(values = sixdonors) + ylab(expression(paste("Microbial load (cells m",L^{"-1"}, ")"))) + xlab("Transit time (h)") +
-  scale_fill_manual(values = transitcolours2, breaks = c("PST", "PMT", "PLT"), 
-                      labels = c("Short", "Medium", "Long"), name = "SHIME transit") +
-     guides(alpha = "none", fill=guide_legend(ncol=1, title.position = "top"), 
-            color=guide_legend(ncol = 3, title.position = "top", title.hjust = 0.5, override.aes = list(size=5))) +
-    theme(legend.position = c(0.7, 0.2), legend.box = "horizontal", 
-          legend.title = element_text(size = 18), legend.text = element_text(size = 18)) +
-  # stat_smooth(method='lm') +
-  geom_text(x = 20, y = 5e+09, size = 5, label = eq(df$TT,df$TotalpermL, type = "poly"), parse = TRUE) +
-  stat_smooth(method = lm, formula = y ~ poly(x, 3, raw = TRUE))
-  # stat_smooth(method = lm, formula = y ~ poly(x, 3, raw = TRUE))
-
-  
-  
-# Log transformation
-# Build the model
-model <- lm(TotalpermL ~ log(TT), data = train.data)
-# Make predictions
-predictions <- model %>% predict(test.data)
-# Model performance
-dfA <- data.frame(
-  RMSE = RMSE(predictions, test.data$TotalpermL),
-  R2 = R2(predictions, test.data$TotalpermL)
-)
-
-ggplot(train.data, aes(TT, TotalpermL) ) +
-  geom_point() +
-  stat_smooth(method = lm, formula = y ~ log(x))
-
-# Build the model
-model <- lm(TotalpermL ~ log(TT), data = df)
-summary(model)
-# Make predictions
-predictions <- model %>% predict(df)
-# Model performance
-dflog <- data.frame(
-  RMSE = RMSE(predictions, df$TotalpermL),
-  R2 = R2(predictions, df$TotalpermL)
-)
-
-
-rm(rhot)
-rhot <- cor.test(log(df$TT), df$TotalpermL, method = 'spearman')
-rhot <- format(as.numeric(rhot$estimate[[1]]), digits = 3)
-rho_text <- expression(paste("Spearman's ", rho, "= 0.833"))
-summary(lm(log(df$TT) ~ df$TotalpermL))
-
-papertheme(ggplot(df, aes(x = as.numeric(TT), y = as.numeric(TotalpermL))) + geom_boxplot(aes(fill = TransitT)) + 
-               geom_jitter(aes(color = Donor, alpha = 0.8))) + 
-  stat_smooth(method = lm, formula = y ~ log(x))
-  
-
-papertheme(ggplot(df, aes(x = as.numeric(TT), y = as.numeric(log(TotalpermL)))) + geom_boxplot(aes(fill = TransitT)) + 
-               geom_jitter(aes(color = Donor, alpha = 0.8))) + 
-  scale_color_manual(values = sixdonors) + ylab(expression(paste("Microbial load (cells m",L^{"-1"}, ")"))) + xlab("Transit time (log(h))") +
-  scale_fill_manual(values = transitcolours2, breaks = c("PST", "PMT", "PLT"), 
-                      labels = c("Short", "Medium", "Long"), name = "SHIME transit") +
-     guides(alpha = "none", fill=guide_legend(ncol=1, title.position = "top"), 
-            color=guide_legend(ncol = 3, title.position = "top", title.hjust = 0.5, override.aes = list(size=5))) +
-    theme(legend.position = c(0.76, 0.15), legend.box = "horizontal", legend.title = element_text(size = 18), legend.text = element_text(size = 18))+
-  stat_smooth(method='lm', se=F, color = "black") + 
-  geom_text(x = 2, y = 5e+09, size = 7, colour = "#666666", family="sans", 
-            label = eq(log(df$TT),df$TotalpermL, type = "log"), parse = TRUE, hjust = 0) +
-  geom_text(x = 6, y = 4.6e+09, size = 7, colour = "#666666", family='sans', label = rho_text, parse = TRUE, hjust = 0)
-
-
-papertheme(ggplot(df, aes(x = as.numeric(TT), y = as.numeric(log(TotalpermL)))) + geom_boxplot(aes(fill = TransitT)) + 
-               geom_jitter(aes(color = Donor, alpha = 0.8))) + 
-  scale_color_manual(values = sixdonors) + ylab(expression(paste("Microbial load (cells m",L^{"-1"}, ")"))) + xlab("Transit time (h)") +
-  scale_fill_manual(values = transitcolours2, breaks = c("PST", "PMT", "PLT"), 
-                      labels = c("Short", "Medium", "Long"), name = "SHIME transit") +
-     guides(alpha = "none", fill=guide_legend(ncol=1, title.position = "top"), 
-            color=guide_legend(ncol = 3, title.position = "top", title.hjust = 0.5, override.aes = list(size=5))) +
-    theme(legend.position = c(0.76, 0.15), legend.box = "horizontal", legend.title = element_text(size = 18), legend.text = element_text(size = 18))+
-  stat_smooth(method='lm', formula = y ~ log(x), se=T, color = "black") + 
-  geom_text(x = 6, y = 5e+09, size = 7, colour = "#666666", family="sans", label = eq(df$TT,log(df$TotalpermL), type = "log"), parse = TRUE, hjust = 0)+
-  geom_text(x = 6, y = 4.6e+09, size = 7, colour = "#666666", family='sans', label = rho_text, parse = TRUE, hjust = 0)
+paperplot_fig1A <- plotD
 ```
 
 # Figure 1 - Paperplot combination faecal, correlation and dotplot
 ```{r fig.height=14, fig.width=17}
 
-# ggarrange(ggarrange(plotA, ggarrange(NULL, paperplot_dotplot, nrow = 2, heights = c(0.1,1.15)), 
-#                   ncol = 2, widths = c(1,0.3), labels = c("A", "B"), font.label = list(size =20)),
-#           ggarrange(paperplot_faecal, paperplot_correlation, labels = c("C", "D"), font.label = list(size =20)), nrow=2, heights = c(1,0.5))
-# 
-# ggarrange(
-#           ggarrange(paperplot_faecal, paperplot_correlation, labels = c("A", "B"), font.label = list(size =20)),
-#           ggarrange(plotA, ggarrange(NULL, paperplot_dotplot, nrow = 2, heights = c(0.1,1.15)), 
-#                   ncol = 2, widths = c(1,0.3), labels = c("C", "D"), font.label = list(size =20)), nrow=2, heights = c(0.5,1))
-# 
-# ggarrange(
-#           ggarrange(paperplot_faecal, paperplot_correlation, paperplot_percentages, 
-#                     labels = c("A", "B", "C"), font.label = list(size =20), ncol = 3, widths = c(1.3,1.3,0.9)),
-#           ggarrange(plotA, ggarrange(NULL, paperplot_dotplot, nrow = 2, heights = c(0.1,1.25)), 
-#                   ncol = 2, widths = c(1,0.3), labels = c("D", "E"), font.label = list(size =20)), nrow=2, heights = c(0.6,1))
-# 
-# ggarrange(
-#           ggarrange(paperplot_correlation, paperplot_faecal, paperplot_percentages, 
-#                     labels = c("A", "B", "C"), font.label = list(size =20), ncol = 3, widths = c(1.3,1.3,0.9)),
-#           ggarrange(plotA, ggarrange(NULL, paperplot_dotplot, nrow = 2, heights = c(0.1,1.25)), 
-#                   ncol = 2, widths = c(1,0.3), labels = c("D", "E"), font.label = list(size =20)), nrow=2, heights = c(0.6,1))
-
-paperplot_bis <- paperplot_dotplot + theme(axis.text.y = element_text(size = 20,family='sans',angle=0),
+paperplot_fig1B <- paperplot_dotplot + theme(axis.text.y = element_text(size = 20,family='sans',angle=0),
                          axis.title.y = element_text(size=20,family='sans',angle=90),
                          axis.ticks.y =element_line(colour = "black"))
 
-comboplot <- ggarrange(
-          ggarrange(paperplot_correlation, paperplot_bis +ylab(expression(paste("Cell concentration (cells ", mL^{"-1"}, ")"))),
-                    paperplot_faecal,  
-                    labels = c("A", "B", "C"), font.label = list(size =20), ncol = 3, widths = c(1.3,0.9,1.4)),
-          ggarrange(plot_Biomass_effA + 
-                      # ylab(expression(paste("Total cells relative to nutrient load (cells ", g^{"-1"}, ")")))
-                    ylab(expression(paste("Nutrient-to-biomass conversion efficiency  (cells ", g^{"-1"}, ")"))),
-                     
-                    ggarrange(NULL,plot_Biomass_effB, nrow = 2, heights = c(0.055,1)), 
-            paperplot_percentages,
-                  ncol = 3, widths = c(1, 0.3,0.5), labels = c("D", "E", "F"), font.label = list(size =20)), 
-          nrow=2, heights = c(1,1.2))
-# comboplot
 
 comboplot <- ggarrange(
-          ggarrange(paperplot_correlation + guides(alpha = "none", fill=guide_legend(ncol=1, title.position = "top"), 
+          ggarrange(paperplot_fig1A + guides(alpha = "none", fill=guide_legend(ncol=1, title.position = "top"), 
             color=guide_legend(ncol = 2, title.position = "top", title.hjust = 0.5, override.aes = list(size=5))) +
               theme(legend.position = c(0.65, 0.13), legend.box = "horizontal", legend.title = element_text(size = 19),
                     legend.text = element_text(size = 19)), 
-                    paperplot_bis + ylab(expression(paste("Cell concentration (cells ", mL^{"-1"}, ")"))),
-                    paperplot_faecal,  
-                    labels = c("A", "B", "C"), font.label = list(size =20), ncol = 3, widths = c(1.35,0.87,1.5)),
-          ggarrange(paperplot_carbohydratesA,
-                    ggarrange(NULL,paperplot_carbohydratesB, nrow = 2, heights = c(0.05,1)), 
-                    paperplot_percentages,
-                  ncol = 3, widths = c(1, 0.45,0.4), labels = c("D", "E", "F"), font.label = list(size =20)), 
-          nrow=2, heights = c(1,1.2))
-# comboplot
-
-
-comboplot <- ggarrange(
-          ggarrange(paperplot_correlation + guides(alpha = "none", fill=guide_legend(ncol=1, title.position = "top"), 
-            color=guide_legend(ncol = 2, title.position = "top", title.hjust = 0.5, override.aes = list(size=5))) +
-              theme(legend.position = c(0.65, 0.13), legend.box = "horizontal", legend.title = element_text(size = 19),
-                    legend.text = element_text(size = 19)), 
-                    paperplot_bis + ylab(expression(paste("Cell concentration (cells ", mL^{"-1"}, ")"))) + 
+                    paperplot_fig1B + ylab(expression(paste("Cell concentration (cells ", mL^{"-1"}, ")"))) + 
               scale_x_discrete(labels= c("Short", "Med", "Long")),
-                    paperplot_faecal,  
+                    paperplot_fig1C,  
                     labels = c("A", "B", "C"), font.label = list(size =22), ncol = 3, widths = c(1.45,0.87,1.5)),
-          ggarrange(paperplot_carbohydratesA,
-                    ggarrange(NULL,paperplot_carbohydratesB + scale_x_discrete(labels= c("Short", "Med", "Long")), 
+          ggarrange(paperplot_fig1D,
+                    ggarrange(NULL,paperplot_fig1E + scale_x_discrete(labels= c("Short", "Med", "Long")), 
                               nrow = 2, heights = c(0.05,1)), 
-                    paperplot_percentages +scale_x_discrete(labels= c("Short", "Med", "Long")),
+                    paperplot_fig1F +scale_x_discrete(labels= c("Short", "Med", "Long")),
                   ncol = 3, widths = c(1, 0.41,0.35), labels = c("D", "E", "F"), font.label = list(size =22)), 
           nrow=2, heights = c(1,1.2));comboplot
 
@@ -3040,677 +2954,7 @@ ggsave(plot = comboplot, width = 20, height = 13, dpi = 300, filename = "Figure1
 
 
 # Ordination
-## db-RDA - 3 parameters
-```{r RDA_microbial load and percentage intact, eval=, echo=TRUE, fig.height=20, fig.width=13.5}
-library(vegan)
-library(ggrepel)
-# General parameters
-functdatanettrt <- subset(df.counts, Ninetransit == 3)
-fdata1 <- subset(functdatanettrt, intTransit == "Short transit donor"); fdata1$ivTransit <- "ST"
-fdata2 <- subset(functdatanettrt, intTransit == "Medium transit donor"); fdata2$ivTransit <- "MT"
-fdata3 <- subset(functdatanettrt, intTransit == "Long transit donor"); fdata3$ivTransit <- "LT"
-functdatanettrt <- rbind(fdata1, 
-                         fdata2,
-                         fdata3); functdatanettrt$ivTransit <- as.factor(functdatanettrt$ivTransit)
-set.seed(0604); labelsint <- c("Int"); labelstot <- c("TC") 
-neon <- c("#2f89fc"); neonsize <- 7 ;labelcolour <- c("#fc0202"); linecolour <- c("#fc0202")
-legendsize <- 15 ; labelsize <- 6; grobsize <- 14
-xgrob <- 0.6;  ygrob <- 0.93; ygrobb <- 0.85; xgrobb <- 0.83; plotlabels = T; plotobjects = T
-leg.A <- c(0.13,0.77)
-leg.C <- c(0.07,0.7)
-leg.E <- c(0.13,0.84)
-# neon <- c("#FC7F02")
-# neon <- c("#7F02FC") 
-lefttitle <- "Total cell concentration (TC)" ; righttitle <- "Percentage intact microbial population (Int)"
-
-
-## Create data frame with data and the sampleinfo
-df.sub <- subset(functdatanettrt, select = c(TotalpermL))
-functdatanettrt$Transit <- as.factor(functdatanettrt$Transit)
-sampleinfo <- subset(functdatanettrt, select = c(ivTransit, Transit, Day, Donor, Vessel))
-
-
-# Develop correct model
-## Compute dissimilarity matrix
- rdaplot <- df.sub
- rdajaccard <- vegdist(rdaplot,method="jaccard",binary="FALSE")
- rdabray <- vegdist(rdaplot,method="bray",binary="FALSE")
-
-## Perform PCoA
- pcoail <- cmdscale(rdajaccard,k=(nrow(rdaplot)-1),eig=TRUE)
- pcoail <- cmdscale(rdabray,k=(nrow(rdaplot)-1),eig=TRUE)
- pcoascores <- pcoail$points
-
-## Automatic stepwise model building for constrained ordination methods
- mod0 <- rda(pcoascores ~ 1, sampleinfo)  # Model with intercept only
- mod1 <- rda(pcoascores ~ ., sampleinfo)  # Model with all explanatory variables
- ordi <- ordiR2step(mod0, scope = formula(mod1), perm.max = 200)
- 
-
- # Go through all the selected variables in the model
- Radjs <- c(); CheckRadjs <- c(); Panova <- c()
- 
- 
- 
- 
-# SHIME transit time
-## Perform RDA with pcoascores to check if its the same
- rdafunct <- rda(pcoascores~Transit + Condition(Vessel) + Condition(ivTransit), sampleinfo)
- # summary(rdafunct); coef(rdafunct)
- 
-## explanatory power of the variables included
- Runadj <- RsquareAdj(rdafunct)$r.squared
- Radj <- RsquareAdj(rdafunct)$adj.r.squared
- CheckRadjs <- c(CheckRadjs, "Transit" = Radj)
- 
- 
- ## As label on plot
-Radj2 <- signif(Radj, digits = 2)
-grob <- grobTree(textGrob(paste("R\u00B2= ",Radj2), x=xgrobb,  y=ygrob, hjust=0,  gp=gpar(col="black", fontsize=grobsize, fontface="italic")))
-
-## labelling axes
-abb_digits = T; dgts = 1; abbnum = 3; alphnumb = 0.62; pointsize = 9
-pos <- position_jitter(width = 0.0, seed = 2)
-if(abb_digits==T){
- Dim1 <- round(summary(rdafunct)$cont$importance[2,1]*100,dgts)
- Dim2 <- round(summary(rdafunct)$cont$importance[2,2]*100,dgts) 
- }else{
-   if(round(summary(rdafunct)$cont$importance[2,1]*100,0)==0){
-     Dim1 <- round(summary(rdafunct)$cont$importance[2,1]*100,1)
-     }else{
-       Dim1 <- round(summary(rdafunct)$cont$importance[2,1]*100,0)
-       }
-   if(round(summary(rdafunct)$cont$importance[2,2]*100,0)==0){
-     Dim2 <- round(summary(rdafunct)$cont$importance[2,2]*100,1)
-     }else{
-       Dim2 <- round(summary(rdafunct)$cont$importance[2,2]*100,0)
-     }
- }
-## plot SCALING2
-plotobjects2 = F
-if(plotobjects2 == TRUE){
-  plot(rdafunct,scaling=2,main="Triplot RDA datanormalised_subset ~ functional -scaling 1 ",type = "text",display=c("sp","wa","cn"))
-  plot(rdafunct,scaling=1,main="Triplot RDA datanormalised_subset ~ functional -scaling 1 ",type = "text",display=c("sp","lc","cn"))
-}
- 
- 
-## ggplot
-rdascores <- scores(rdafunct, choices = 1:2, scaling = 2, display = "sites")
-firstaxispoints <- rdascores[, 1]; secondaxispoints <- rdascores[, 2]
-points <- data.frame(fa = firstaxispoints, sa = secondaxispoints, Donor = sampleinfo$Donor, 
-    P_D = sampleinfo$Vessel, Transit = sampleinfo$Transit, ivTransit = sampleinfo$ivTransit)
-points$P_D <- mapvalues(points$P_D, from = c("P", "D"), to = c("Proximal", "Distal"))
-rdascorevfa <- data.frame(scores(rdafunct, choices = 1:2, scaling = 2, display = "species"))
-rdafactor <- data.frame(summary(rdafunct)$centroids)
-rownames(rdafactor) <- mapvalues(rownames(rdafactor), from = c("TransitST", "TransitMT", "TransitLT"), 
-                                 to = c("Short", "Medium", "Long"))
-plotobj <- ggplot(as.data.frame(points)) + geom_point(aes(x = fa, y = sa, size = pointsize, color = Transit), alpha = 0.8) +
-  scale_colour_manual(values = transitcolors, name = "SHIME transit", labels = c("Short", "Medium", "Long")) + xlab(paste("RDA1", Dim1, "%", sep = " ")) + 
-    ylab(paste("RDA2", Dim2, "%", sep = " ")) + annotation_custom(grob) + 
-    geom_segment(data = rdascorevfa, aes(x = 0, xend = RDA1, y = 0, yend = RDA2), 
-        color = linecolour) + ggrepel::geom_text_repel(data = rdafactor, aes(x = RDA1, y = RDA2), 
-                                         # fill = "grey", alpha = 0.5,
-    color = neon, label = rownames(rdafactor), size = neonsize)
-
-if(plotlabels == T){
-
-      plotobj <- plotobj + ggrepel::geom_label_repel(data = rdascorevfa,  aes(x = RDA1, y = RDA2,
-                                          label = labelstot,
-                                          segment.color = "grey50"
-                                          # vjust = ifelse(RDA2 >= 0, -0.1, 0.7),
-                                          # hjust = ifelse(RDA1 >= 0, 0, 0.5)
-                                          ),
-                                          fill = "grey",
-                                          alpha = alphnumb,
-                                          label.size = NA,
-                                          # color = labelcolour,
-                                          size = labelsize,
-                                          fontface = "italic",
-                                          position = pos)
-      }
-plotobj <- papertheme(plotobj)
-plotobj <- plotobj + guides(color = guide_legend(ncol = 1, direction = "horizontal",
-      title.position = "top", override.aes = list(size = 5)), shape = guide_legend(ncol = 1,direction = "horizontal", override.aes = list(size = 5), title.position = "top"), size = "none") +
-  theme(legend.position = "right") 
-# mylegendPDfunctnet <- g_legend(plotobj)
-plotobj <- plotobj + theme(legend.position =  c(0.88,0.05), 
-        legend.text = element_text(size=legendsize,family='sans',angle=0),
-        legend.title = element_text(size=legendsize,family='sans',angle=0),
-        legend.direction = "horizontal") + ggtitle(lefttitle) 
-plotobjrdatop15PDA <- plotobj + xlim(min(rdascorevfa)-0.5, max(points$fa + 0.5)) + 
-  # ggtitle(lefttitle) + 
-  theme(plot.title = element_text(hjust = 0.5, face="bold"))
-
-if(plotobjects == TRUE){plotobjrdatop15PDA}
-
- 
- 
-# ivTransit
-## Perform RDA with pcoascores to check if its the same
- rdafunct <- rda(pcoascores~ivTransit + Condition(Vessel) + Condition(Transit), sampleinfo)
- # summary(rdafunct); coef(rdafunct)
- 
-## explanatory power of the variables included
- Runadj <- RsquareAdj(rdafunct)$r.squared
- Radj <- RsquareAdj(rdafunct)$adj.r.squared
- CheckRadjs <- c(CheckRadjs, "Transit" = Radj)
- 
- 
- ## As label on plot
-Radj2 <- signif(Radj, digits = 2)
-grob <- grobTree(textGrob(paste("Donor R\u00B2 = 0.027", 
-                                  "\n",lblInvivo," transit R\u00B2= ",Radj2), x=xgrob, 
-                            y=ygrob, hjust=0,  gp=gpar(col="black", fontsize=grobsize, fontface="italic")))
-
-## labelling axes
-abb_digits = T; dgts = 1; abbnum = 3; alphnumb = 0.62; pointsize = 9
-pos <- position_jitter(width = 0.0, seed = 2)
-if(abb_digits==T){
- Dim1 <- round(summary(rdafunct)$cont$importance[2,1]*100,dgts)
- Dim2 <- round(summary(rdafunct)$cont$importance[2,2]*100,dgts) 
- }else{
-   if(round(summary(rdafunct)$cont$importance[2,1]*100,0)==0){
-     Dim1 <- round(summary(rdafunct)$cont$importance[2,1]*100,1)
-     }else{
-       Dim1 <- round(summary(rdafunct)$cont$importance[2,1]*100,0)
-       }
-   if(round(summary(rdafunct)$cont$importance[2,2]*100,0)==0){
-     Dim2 <- round(summary(rdafunct)$cont$importance[2,2]*100,1)
-     }else{
-       Dim2 <- round(summary(rdafunct)$cont$importance[2,2]*100,0)
-     }
- }
-## plot SCALING2
-plotobjects2 = F
-if(plotobjects2 == TRUE){
-  plot(rdafunct,scaling=2,main="Triplot RDA datanormalised_subset ~ functional -scaling 1 ",type = "text",display=c("sp","wa","cn"))
-  plot(rdafunct,scaling=1,main="Triplot RDA datanormalised_subset ~ functional -scaling 1 ",type = "text",display=c("sp","lc","cn"))
-}
- 
- 
-## ggplot
-rdascores <- scores(rdafunct, choices = 1:2, scaling = 2, display = "sites")
-firstaxispoints <- rdascores[, 1]; secondaxispoints <- rdascores[, 2]
-points <- data.frame(fa = firstaxispoints, sa = secondaxispoints, Donor = sampleinfo$Donor, 
-    P_D = sampleinfo$Vessel, Transit = sampleinfo$Transit, ivTransit = sampleinfo$ivTransit)
-points$P_D <- mapvalues(points$P_D, from = c("P", "D"), to = c("Proximal", "Distal"))
-rdascorevfa <- data.frame(scores(rdafunct, choices = 1:2, scaling = 2, display = "species"))
-rdafactor <- data.frame(summary(rdafunct)$centroids)
-rownames(rdafactor) <- mapvalues(rownames(rdafactor), from = c("ivTransitST", "ivTransitMT", "ivTransitLT"), 
-                                 to = c("Short", "Medium", "Long"))
-plotobj <- ggplot(as.data.frame(points)) + geom_point(aes(x = fa, y = sa, size = pointsize, color = Donor, shape = ivTransit), alpha = 0.8) +
-  scale_colour_manual(values = sixdonors, name = "Donor") +
-  scale_shape_manual(name = expression(paste(italic("In vivo"), " transit")), 
-              values = c("ST" = 16, "MT" = 17, "LT" = 15), labels = c("Short", "Medium", "Long"))+
-  
-  xlab(paste("RDA1", Dim1, "%", sep = " ")) + 
-    ylab(paste("RDA2", Dim2, "%", sep = " ")) + annotation_custom(grob) + 
-    geom_segment(data = rdascorevfa, aes(x = 0, xend = RDA1, y = 0, yend = RDA2), 
-        color = linecolour) + ggrepel::geom_text_repel(data = rdafactor, aes(x = RDA1, y = RDA2), 
-                                         # fill = "grey", alpha = 0.5,
-    color = neon, label = rownames(rdafactor), size = neonsize)
-
-if(plotlabels == T){
-
-      plotobj <- plotobj + ggrepel::geom_label_repel(data = rdascorevfa,  aes(x = RDA1, y = RDA2,
-                                          label = labelstot,
-                                          segment.color = "grey50"
-                                          # vjust = ifelse(RDA2 >= 0, -0.1, 0.7),
-                                          # hjust = ifelse(RDA1 >= 0, 0, 0.5)
-                                          ),
-                                          fill = "grey",
-                                          alpha = alphnumb,
-                                          label.size = NA,
-                                          # color = labelcolour,
-                                          size = labelsize,
-                                          fontface = "italic",
-                                          position = pos)
-      }
-plotobj <- papertheme(plotobj)
-plotobj <- plotobj + guides(color = guide_legend(ncol = 2, direction = "horizontal",
-      title.position = "top", override.aes = list(size = 5)), shape = guide_legend(ncol = 1,direction = "horizontal", override.aes = list(size = 5), title.position = "top"), size = "none") +
-  theme(legend.position = "right") 
-# mylegendPDfunctnet <- g_legend(plotobj)
-plotobj <- plotobj + theme(legend.position =  c(0.88,0.05), 
-        legend.text = element_text(size=legendsize,family='sans',angle=0),
-        legend.title = element_text(size=legendsize,family='sans',angle=0),
-        legend.direction = "horizontal") 
-plotobjrdatop15PDC <- plotobj + xlim(min(rdascorevfa)-0.5, max(points$fa + 0.5)) + 
-  # ggtitle(lefttitle) + 
-  theme(plot.title = element_text(hjust = 0.5, face="bold"))
-
-if(plotobjects == TRUE){plotobjrdatop15PDC}
-
-
-
-
-
-
-
-# Vessel
-## Perform RDA with pcoascores to check if its the same
- rdafunct <- rda(pcoascores~Vessel + Condition(ivTransit) + Condition(Transit), sampleinfo)
- # summary(rdafunct); coef(rdafunct)
- 
-## explanatory power of the variables included
- Runadj <- RsquareAdj(rdafunct)$r.squared
- Radj <- RsquareAdj(rdafunct)$adj.r.squared
- CheckRadjs <- c(CheckRadjs, "Transit" = Radj)
- 
- 
- ## As label on plot
-Radj2 <- signif(Radj, digits = 2)
-grob <- grobTree(textGrob(paste("R\u00B2 =", Radj2), x=xgrobb, 
-                            y=ygrob, hjust=0,  gp=gpar(col="black", fontsize=grobsize, fontface="italic")))
-
-## labelling axes
-abb_digits = T; dgts = 1; abbnum = 3; alphnumb = 0.62; pointsize = 9
-pos <- position_jitter(width = 0.0, seed = 2)
-if(abb_digits==T){
- Dim1 <- round(summary(rdafunct)$cont$importance[2,1]*100,dgts)
- Dim2 <- round(summary(rdafunct)$cont$importance[2,2]*100,dgts) 
- }else{
-   if(round(summary(rdafunct)$cont$importance[2,1]*100,0)==0){
-     Dim1 <- round(summary(rdafunct)$cont$importance[2,1]*100,1)
-     }else{
-       Dim1 <- round(summary(rdafunct)$cont$importance[2,1]*100,0)
-       }
-   if(round(summary(rdafunct)$cont$importance[2,2]*100,0)==0){
-     Dim2 <- round(summary(rdafunct)$cont$importance[2,2]*100,1)
-     }else{
-       Dim2 <- round(summary(rdafunct)$cont$importance[2,2]*100,0)
-     }
- }
-## plot SCALING2
-plotobjects2 = F
-if(plotobjects2 == TRUE){
-  plot(rdafunct,scaling=2,main="Triplot RDA datanormalised_subset ~ functional -scaling 1 ",type = "text",display=c("sp","wa","cn"))
-  plot(rdafunct,scaling=1,main="Triplot RDA datanormalised_subset ~ functional -scaling 1 ",type = "text",display=c("sp","lc","cn"))
-}
- 
- 
-## ggplot
-rdascores <- scores(rdafunct, choices = 1:2, scaling = 2, display = "sites")
-firstaxispoints <- rdascores[, 1]; secondaxispoints <- rdascores[, 2]
-points <- data.frame(fa = firstaxispoints, sa = secondaxispoints, Donor = sampleinfo$Donor, 
-    P_D = sampleinfo$Vessel, Transit = sampleinfo$Transit, ivTransit = sampleinfo$ivTransit)
-points$P_D <- mapvalues(points$P_D, from = c("P", "D"), to = c("Proximal", "Distal"))
-rdascorevfa <- data.frame(scores(rdafunct, choices = 1:2, scaling = 2, display = "species"))
-rdafactor <- data.frame(summary(rdafunct)$centroids)
-rownames(rdafactor) <- mapvalues(rownames(rdafactor), from = c("VesselP", "VesselD"), 
-                                 to = c("Proximal", "Distal"))
-plotobj <- ggplot(as.data.frame(points)) + geom_point(aes(x = fa, y = sa, size = pointsize, color = P_D), alpha = 0.8) +
-  scale_colour_manual(values = c("Proximal" = "#cdb174", "Distal" = "#a48d5c"), name = "Vessel") +
-  xlab(paste("RDA1", Dim1, "%", sep = " ")) + 
-    ylab(paste("PC1", Dim2, "%", sep = " ")) + annotation_custom(grob) + 
-    geom_segment(data = rdascorevfa, aes(x = 0, xend = RDA1, y = 0, yend = PC1), 
-        color = linecolour) + ggrepel::geom_text_repel(data = rdafactor, aes(x = RDA1, y = PC1), 
-                                         # fill = "grey", alpha = 0.5,
-    color = neon, label = rownames(rdafactor), size = neonsize)
-
-if(plotlabels == T){
-
-      plotobj <- plotobj + ggrepel::geom_label_repel(data = rdascorevfa,  aes(x = RDA1, y = PC1,
-                                          label = labelstot,
-                                          segment.color = "grey50"
-                                          # vjust = ifelse(RDA2 >= 0, -0.1, 0.7),
-                                          # hjust = ifelse(RDA1 >= 0, 0, 0.5)
-                                          ),
-                                          fill = "grey",
-                                          alpha = alphnumb,
-                                          label.size = NA,
-                                          # color = labelcolour,
-                                          size = labelsize,
-                                          fontface = "italic",
-                                          position = pos)
-      }
-plotobj <- papertheme(plotobj)
-plotobj <- plotobj + guides(color = guide_legend(ncol = 1, direction = "horizontal",
-      title.position = "top", override.aes = list(size = 5)), shape = guide_legend(ncol = 1,direction = "horizontal", override.aes = list(size = 5), title.position = "top"), size = "none") +
-  theme(legend.position = "right") 
-# mylegendPDfunctnet <- g_legend(plotobj)
-plotobj <- plotobj + theme(legend.position =  c(0.88,0.05), 
-        legend.text = element_text(size=legendsize,family='sans',angle=0),
-        legend.title = element_text(size=legendsize,family='sans',angle=0),
-        legend.direction = "horizontal") 
-plotobjrdatop15PDE <- plotobj + xlim(min(rdascorevfa)-0.5, max(points$fa + 0.5)) + 
-  # ggtitle(lefttitle) + 
-  theme(plot.title = element_text(hjust = 0.5, face="bold"))
-
-if(plotobjects == TRUE){plotobjrdatop15PDE}
-
-
-
-
-
-
-
-
-## Create data frame with data and the sampleinfo
-df.sub <- subset(functdatanettrt, select = c(Perc_intact))
-functdatanettrt$Transit <- as.factor(functdatanettrt$Transit)
-sampleinfo <- subset(functdatanettrt, select = c(ivTransit, Transit, Day, Donor, Vessel))
-
-library(vegan)
-library(ggrepel)
-# Develop correct model
-## Compute dissimilarity matrix
- rdaplot <- df.sub
- rdajaccard <- vegdist(rdaplot,method="jaccard",binary="FALSE")
- rdabray <- vegdist(rdaplot,method="bray",binary="FALSE")
-
-## Perform PCoA
- pcoail <- cmdscale(rdajaccard,k=(nrow(rdaplot)-1),eig=TRUE)
- pcoail <- cmdscale(rdabray,k=(nrow(rdaplot)-1),eig=TRUE)
- pcoascores <- pcoail$points
-
-## Automatic stepwise model building for constrained ordination methods
- mod0 <- rda(pcoascores ~ 1, sampleinfo)  # Model with intercept only
- mod1 <- rda(pcoascores ~ ., sampleinfo)  # Model with all explanatory variables
- ordi <- ordiR2step(mod0, scope = formula(mod1), perm.max = 200)
- 
-
- # Go through all the selected variables in the model
- Radjs <- c(); CheckRadjs <- c(); Panova <- c()
- 
- 
- 
- 
-# SHIME transit time
-## Perform RDA with pcoascores to check if its the same
- rdafunct <- rda(pcoascores~Transit + Condition(Vessel) + Condition(ivTransit), sampleinfo)
- # summary(rdafunct); coef(rdafunct)
- 
-## explanatory power of the variables included
- Runadj <- RsquareAdj(rdafunct)$r.squared
- Radj <- RsquareAdj(rdafunct)$adj.r.squared
- CheckRadjs <- c(CheckRadjs, "Transit" = Radj)
- 
- 
- ## As label on plot
-Radj2 <- signif(Radj, digits = 2)
-grob <- grobTree(textGrob(paste("R\u00B2= ",Radj2), x=xgrobb,  y=ygrob, hjust=0,  gp=gpar(col="black", fontsize=grobsize, fontface="italic")))
-
-## labelling axes
-abb_digits = T; dgts = 1; abbnum = 3; alphnumb = 0.62; pointsize = 9
-pos <- position_jitter(width = 0.0, seed = 2)
-if(abb_digits==T){
- Dim1 <- round(summary(rdafunct)$cont$importance[2,1]*100,dgts)
- Dim2 <- round(summary(rdafunct)$cont$importance[2,2]*100,dgts) 
- }else{
-   if(round(summary(rdafunct)$cont$importance[2,1]*100,0)==0){
-     Dim1 <- round(summary(rdafunct)$cont$importance[2,1]*100,1)
-     }else{
-       Dim1 <- round(summary(rdafunct)$cont$importance[2,1]*100,0)
-       }
-   if(round(summary(rdafunct)$cont$importance[2,2]*100,0)==0){
-     Dim2 <- round(summary(rdafunct)$cont$importance[2,2]*100,1)
-     }else{
-       Dim2 <- round(summary(rdafunct)$cont$importance[2,2]*100,0)
-     }
- }
-## plot SCALING2
-plotobjects2 = F
-if(plotobjects2 == TRUE){
-  plot(rdafunct,scaling=2,main="Triplot RDA datanormalised_subset ~ functional -scaling 1 ",type = "text",display=c("sp","wa","cn"))
-  plot(rdafunct,scaling=1,main="Triplot RDA datanormalised_subset ~ functional -scaling 1 ",type = "text",display=c("sp","lc","cn"))
-}
- 
- 
-## ggplot
-rdascores <- scores(rdafunct, choices = 1:2, scaling = 2, display = "sites")
-firstaxispoints <- rdascores[, 1]; secondaxispoints <- rdascores[, 2]
-points <- data.frame(fa = firstaxispoints, sa = secondaxispoints, Donor = sampleinfo$Donor, 
-    P_D = sampleinfo$Vessel, Transit = sampleinfo$Transit, ivTransit = sampleinfo$ivTransit)
-points$P_D <- mapvalues(points$P_D, from = c("P", "D"), to = c("Proximal", "Distal"))
-rdascorevfa <- data.frame(scores(rdafunct, choices = 1:2, scaling = 2, display = "species"))
-rdafactor <- data.frame(summary(rdafunct)$centroids)
-rownames(rdafactor) <- mapvalues(rownames(rdafactor), from = c("TransitST", "TransitMT", "TransitLT"), 
-                                 to = c("Short", "Medium", "Long"))
-plotobj <- ggplot(as.data.frame(points)) + geom_point(aes(x = fa, y = sa, size = pointsize, color = Transit), alpha = 0.8) +
-  scale_colour_manual(values = transitcolors, name = "SHIME transit", labels = c("Short", "Medium", "Long")) + xlab(paste("RDA1", Dim1, "%", sep = " ")) + 
-    ylab(paste("RDA2", Dim2, "%", sep = " ")) + annotation_custom(grob) + 
-    geom_segment(data = rdascorevfa, aes(x = 0, xend = RDA1, y = 0, yend = RDA2), 
-        color = linecolour) + ggrepel::geom_text_repel(data = rdafactor, aes(x = RDA1, y = RDA2), 
-                                         # fill = "grey", alpha = 0.5,
-    color = neon, label = rownames(rdafactor), size = neonsize)
-
-if(plotlabels == T){
-
-      plotobj <- plotobj + ggrepel::geom_label_repel(data = rdascorevfa,  aes(x = RDA1, y = RDA2,
-                                          label = labelsint,
-                                          segment.color = "grey50"
-                                          # vjust = ifelse(RDA2 >= 0, -0.1, 0.7),
-                                          # hjust = ifelse(RDA1 >= 0, 0, 0.5)
-                                          ),
-                                          fill = "grey",
-                                          alpha = alphnumb,
-                                          label.size = NA,
-                                          # color = labelcolour,
-                                          size = labelsize,
-                                          fontface = "italic",
-                                          position = pos, parse = T)
-      
-        }
-plotobj <- papertheme(plotobj)
-plotobj <- plotobj + guides(color = guide_legend(ncol = 1, direction = "horizontal",
-      title.position = "top", override.aes = list(size = 5)), shape = guide_legend(ncol = 1,direction = "horizontal", override.aes = list(size = 5), title.position = "top"), size = "none") +
-  theme(legend.position = "right") 
-# mylegendPDfunctnet <- g_legend(plotobj)
-plotobj <- plotobj + theme(legend.position =  c(0.88,0.05), 
-        legend.text = element_text(size=legendsize,family='sans',angle=0),
-        legend.title = element_text(size=legendsize,family='sans',angle=0),
-        legend.direction = "horizontal") + ggtitle(righttitle) 
-plotobjrdatop15PDB <- plotobj + xlim(min(rdascorevfa)-0.5, max(points$fa + 0.5)) + 
-  # ggtitle(lefttitle) + 
-  theme(plot.title = element_text(hjust = 0.5, face="bold"))
-
-if(plotobjects == TRUE){plotobjrdatop15PDB}
-
- 
- 
-# ivTransit
-## Perform RDA with pcoascores to check if its the same
- rdafunct <- rda(pcoascores~ivTransit + Condition(Vessel) + Condition(Transit), sampleinfo)
- # summary(rdafunct); coef(rdafunct)
- 
-## explanatory power of the variables included
- Runadj <- RsquareAdj(rdafunct)$r.squared
- Radj <- RsquareAdj(rdafunct)$adj.r.squared
- CheckRadjs <- c(CheckRadjs, "Transit" = Radj)
- 
- 
- ## As label on plot
-Radj2 <- signif(Radj, digits = 2)
-grob <- grobTree(textGrob(paste("Donor R\u00B2 = 0.15", 
-                                  "\nIn vivo transit R\u00B2= ",Radj2), x=xgrob, 
-                            y=ygrobb, hjust=0,  gp=gpar(col="black", fontsize=grobsize, fontface="italic")))
-
-## labelling axes
-abb_digits = T; dgts = 1; abbnum = 3; alphnumb = 0.62; pointsize = 9
-pos <- position_jitter(width = 0.0, seed = 2)
-if(abb_digits==T){
- Dim1 <- round(summary(rdafunct)$cont$importance[2,1]*100,dgts)
- Dim2 <- round(summary(rdafunct)$cont$importance[2,2]*100,dgts) 
- }else{
-   if(round(summary(rdafunct)$cont$importance[2,1]*100,0)==0){
-     Dim1 <- round(summary(rdafunct)$cont$importance[2,1]*100,1)
-     }else{
-       Dim1 <- round(summary(rdafunct)$cont$importance[2,1]*100,0)
-       }
-   if(round(summary(rdafunct)$cont$importance[2,2]*100,0)==0){
-     Dim2 <- round(summary(rdafunct)$cont$importance[2,2]*100,1)
-     }else{
-       Dim2 <- round(summary(rdafunct)$cont$importance[2,2]*100,0)
-     }
- }
-## plot SCALING2
-plotobjects2 = F
-if(plotobjects2 == TRUE){
-  plot(rdafunct,scaling=2,main="Triplot RDA datanormalised_subset ~ functional -scaling 1 ",type = "text",display=c("sp","wa","cn"))
-  plot(rdafunct,scaling=1,main="Triplot RDA datanormalised_subset ~ functional -scaling 1 ",type = "text",display=c("sp","lc","cn"))
-}
- 
- 
-## ggplot
-rdascores <- scores(rdafunct, choices = 1:2, scaling = 2, display = "sites")
-firstaxispoints <- rdascores[, 1]; secondaxispoints <- rdascores[, 2]
-points <- data.frame(fa = firstaxispoints, sa = secondaxispoints, Donor = sampleinfo$Donor, 
-    P_D = sampleinfo$Vessel, Transit = sampleinfo$Transit, ivTransit = sampleinfo$ivTransit)
-points$P_D <- mapvalues(points$P_D, from = c("P", "D"), to = c("Proximal", "Distal"))
-rdascorevfa <- data.frame(scores(rdafunct, choices = 1:2, scaling = 2, display = "species"))
-rdafactor <- data.frame(summary(rdafunct)$centroids)
-rownames(rdafactor) <- mapvalues(rownames(rdafactor), from = c("ivTransitST", "ivTransitMT", "ivTransitLT"), 
-                                 to = c("Short", "Medium", "Long"))
-plotobj <- ggplot(as.data.frame(points)) + geom_point(aes(x = fa, y = sa, size = pointsize, color = Donor, shape = ivTransit), alpha = 0.8) +
-  scale_colour_manual(values = sixdonors, name = "Donor") +
-  scale_shape_manual(name = expression(paste(italic("In vivo"), " transit")), 
-              values = c("ST" = 16, "MT" = 17, "LT" = 15), labels = c("Short", "Medium", "Long"))+
-  
-  xlab(paste("RDA1", Dim1, "%", sep = " ")) + 
-    ylab(paste("RDA2", Dim2, "%", sep = " ")) + annotation_custom(grob) + 
-    geom_segment(data = rdascorevfa, aes(x = 0, xend = RDA1, y = 0, yend = RDA2), 
-        color = linecolour) + ggrepel::geom_text_repel(data = rdafactor, aes(x = RDA1, y = RDA2), 
-                                         # fill = "grey", alpha = 0.5,
-    color = neon, label = rownames(rdafactor), size = neonsize)
-
-if(plotlabels == T){
-
-      plotobj <- plotobj + ggrepel::geom_label_repel(data = rdascorevfa,  aes(x = RDA1, y = RDA2,
-                                          label = labelsint,
-                                          segment.color = "grey50"
-                                          # vjust = ifelse(RDA2 >= 0, -0.1, 0.7),
-                                          # hjust = ifelse(RDA1 >= 0, 0, 0.5)
-                                          ),
-                                          fill = "grey",
-                                          alpha = alphnumb,
-                                          label.size = NA,
-                                          # color = labelcolour,
-                                          size = labelsize,
-                                          fontface = "italic",
-                                          position = pos)
-      }
-plotobj <- papertheme(plotobj)
-plotobj <- plotobj + guides(color = guide_legend(ncol = 2, direction = "horizontal",
-      title.position = "top", override.aes = list(size = 5)), shape = guide_legend(ncol = 1,direction = "horizontal", override.aes = list(size = 5), title.position = "top"), size = "none") +
-  theme(legend.position = "right") 
-# mylegendPDfunctnet <- g_legend(plotobj)
-plotobj <- plotobj + theme(legend.position =  c(0.88,0.05), 
-        legend.text = element_text(size=legendsize,family='sans',angle=0),
-        legend.title = element_text(size=legendsize,family='sans',angle=0),
-        legend.direction = "horizontal") 
-plotobjrdatop15PDD <- plotobj + xlim(min(rdascorevfa)-0.5, max(points$fa + 0.5)) + 
-  # ggtitle(lefttitle) + 
-  theme(plot.title = element_text(hjust = 0.5, face="bold"))
-
-if(plotobjects == TRUE){plotobjrdatop15PDD}
-
-
-
-
-
-
-
-# Vessel
-## Perform RDA with pcoascores to check if its the same
- rdafunct <- rda(pcoascores~Vessel + Condition(ivTransit) + Condition(Transit), sampleinfo)
- # summary(rdafunct); coef(rdafunct)
- 
-## explanatory power of the variables included
- Runadj <- RsquareAdj(rdafunct)$r.squared
- Radj <- RsquareAdj(rdafunct)$adj.r.squared
- CheckRadjs <- c(CheckRadjs, "Transit" = Radj)
- 
- 
- ## As label on plot
-Radj2 <- signif(Radj, digits = 2)
-grob <- grobTree(textGrob(paste("R\u00B2 =", Radj2), x=xgrobb, 
-                            y=ygrob, hjust=0,  gp=gpar(col="black", fontsize=grobsize, fontface="italic")))
-
-## labelling axes
-abb_digits = T; dgts = 1; abbnum = 3; alphnumb = 0.62; pointsize = 9
-pos <- position_jitter(width = 0.0, seed = 2)
-if(abb_digits==T){
- Dim1 <- round(summary(rdafunct)$cont$importance[2,1]*100,dgts)
- Dim2 <- round(summary(rdafunct)$cont$importance[2,2]*100,dgts) 
- }else{
-   if(round(summary(rdafunct)$cont$importance[2,1]*100,0)==0){
-     Dim1 <- round(summary(rdafunct)$cont$importance[2,1]*100,1)
-     }else{
-       Dim1 <- round(summary(rdafunct)$cont$importance[2,1]*100,0)
-       }
-   if(round(summary(rdafunct)$cont$importance[2,2]*100,0)==0){
-     Dim2 <- round(summary(rdafunct)$cont$importance[2,2]*100,1)
-     }else{
-       Dim2 <- round(summary(rdafunct)$cont$importance[2,2]*100,0)
-     }
- }
-## plot SCALING2
-plotobjects2 = F
-if(plotobjects2 == TRUE){
-  plot(rdafunct,scaling=2,main="Triplot RDA datanormalised_subset ~ functional -scaling 1 ",type = "text",display=c("sp","wa","cn"))
-  plot(rdafunct,scaling=1,main="Triplot RDA datanormalised_subset ~ functional -scaling 1 ",type = "text",display=c("sp","lc","cn"))
-}
- 
- 
-## ggplot
-rdascores <- scores(rdafunct, choices = 1:2, scaling = 2, display = "sites")
-firstaxispoints <- rdascores[, 1]; secondaxispoints <- rdascores[, 2]
-points <- data.frame(fa = firstaxispoints, sa = secondaxispoints, Donor = sampleinfo$Donor, 
-    P_D = sampleinfo$Vessel, Transit = sampleinfo$Transit, ivTransit = sampleinfo$ivTransit)
-points$P_D <- mapvalues(points$P_D, from = c("P", "D"), to = c("Proximal", "Distal"))
-rdascorevfa <- data.frame(scores(rdafunct, choices = 1:2, scaling = 2, display = "species"))
-rdafactor <- data.frame(summary(rdafunct)$centroids)
-rownames(rdafactor) <- mapvalues(rownames(rdafactor), from = c("VesselP", "VesselD"), 
-                                 to = c("Proximal", "Distal"))
-plotobj <- ggplot(as.data.frame(points)) + geom_point(aes(x = fa, y = sa, size = pointsize, color = P_D), alpha = 0.8) +
-  scale_colour_manual(values = c("Proximal" = "#cdb174", "Distal" = "#a48d5c"), name = "Vessel") +
-  xlab(paste("RDA1", Dim1, "%", sep = " ")) + 
-    ylab(paste("PC1", Dim2, "%", sep = " ")) + annotation_custom(grob) + 
-    geom_segment(data = rdascorevfa, aes(x = 0, xend = RDA1, y = 0, yend = PC1), 
-        color = linecolour) +ggrepel::geom_text_repel(data = rdafactor, aes(x = RDA1, y = PC1), 
-                                         # fill = "grey", alpha = 0.5,
-    color = neon, label = rownames(rdafactor), size = neonsize)
-
-if(plotlabels == T){
-
-      plotobj <- plotobj + ggrepel::geom_label_repel(data = rdascorevfa,  aes(x = RDA1, y = PC1,
-                                          label = labelsint,
-                                          segment.color = "grey50"
-                                          # vjust = ifelse(RDA2 >= 0, -0.1, 0.7),
-                                          # hjust = ifelse(RDA1 >= 0, 0, 0.5)
-                                          ),
-                                          fill = "grey",
-                                          alpha = alphnumb,
-                                          label.size = NA,
-                                          # color = labelcolour,
-                                          size = labelsize,
-                                          fontface = "italic",
-                                          position = pos)
-      }
-plotobj <- papertheme(plotobj)
-plotobj <- plotobj + guides(color = guide_legend(ncol = 1, direction = "horizontal",
-      title.position = "top", override.aes = list(size = 5)), shape = guide_legend(ncol = 1,direction = "horizontal", override.aes = list(size = 5), title.position = "top"), size = "none") +
-  theme(legend.position = "right") 
-# mylegendPDfunctnet <- g_legend(plotobj)
-plotobj <- plotobj + theme(legend.position =  c(0.88,0.05), 
-        legend.text = element_text(size=legendsize,family='sans',angle=0),
-        legend.title = element_text(size=legendsize,family='sans',angle=0),
-        legend.direction = "horizontal") 
-plotobjrdatop15PDF <- plotobj + xlim(min(rdascorevfa)-0.5, max(points$fa + 0.5)) + 
-  # ggtitle(lefttitle) + 
-  theme(plot.title = element_text(hjust = 0.5, face="bold"))
-
-if(plotobjects == TRUE){plotobjrdatop15PDF}
-
-ggarrange(plotobjrdatop15PDA + theme(legend.position = "none"), plotobjrdatop15PDB + theme(legend.position = c(0.85,0.5)), 
-          plotobjrdatop15PDC+ theme(legend.position = "none"), plotobjrdatop15PDD + theme(legend.position = c(0.85,0.35)), 
-          plotobjrdatop15PDE+ theme(legend.position = "none"), plotobjrdatop15PDF + theme(legend.position = c(0.85,0.4)),
-          ncol = 2 , nrow =3 )
-
-```
-
-# Figure S5
+# Figure S6
 ## db-RDA - 4 parameters
 ```{r RDA_microbial load and percentage intact, eval=, echo=TRUE, fig.height=18, fig.width=13}
 library(vegan)
@@ -3838,20 +3082,7 @@ plotobj <- ggplot(as.data.frame(points)) + geom_point(aes(x = fa, y = sa, size =
 
 if(plotlabels == T){
 
-      # plotobj <- plotobj + ggrepel::geom_label_repel(data = rdascorevfa,  aes(x = CAP1, y = CAP2,
-      #                                     label = labelstot#,segment.color = "grey50"
-      #                                     # vjust = ifelse(RDA2 >= 0, -0.1, 0.7),
-      #                                     # hjust = ifelse(RDA1 >= 0, 0, 0.5)
-      #                                     ),
-      #                                     color = linecolour,
-      #                                     fill = "grey",
-      #                                     alpha = alphnumb,
-      #                                     label.size = NA,
-      #                                     # color = labelcolour,
-      #                                     size = labelsize,
-      #                                     fontface = "italic",
-      #                                     position = pos)
-  
+      
       plotobj <- plotobj + geom_label(data = rdascorevfa,  aes(x = CAP1, y = CAP2, label = labelstot),
                                           color = linecolour, alpha = alphnumb, label.size = NA,
                                           size = labelsize, fontface = "italic")
@@ -3947,19 +3178,7 @@ plotobj <- ggplot(as.data.frame(points)) + geom_point(aes(x = fa, y = sa, size =
 
 if(plotlabels == T){
 
-      # plotobj <- plotobj + ggrepel::geom_label_repel(data = rdascorevfa,  aes(x = CAP1, y = CAP2,
-      #                                     label = labelstot#,segment.color = "grey50"
-      #                                     # vjust = ifelse(RDA2 >= 0, -0.1, 0.7),
-      #                                     # hjust = ifelse(RDA1 >= 0, 0, 0.5)
-      #                                     ),
-      #                                     color = linecolour,
-      #                                     fill = "grey",
-      #                                     alpha = alphnumb,
-      #                                     label.size = NA,
-      #                                     # color = labelcolour,
-      #                                     size = labelsize,
-      #                                     fontface = "italic",
-      #                                     position = pos)
+     
       plotobj <- plotobj + geom_label(data = rdascorevfa,  aes(x = CAP1, y = CAP2, label = labelstot),
                                           color = linecolour, alpha = alphnumb, label.size = NA,
                                           size = labelsize, fontface = "italic")
@@ -4048,25 +3267,11 @@ plotobj <- ggplot(as.data.frame(points)) + geom_point(aes(x = fa, y = sa, size =
                               segment.color = "grey50", alpha = alphnumb+.15, 
                                          # fill = "grey", alpha = 0.5,
     color = neon, label = rownames(rdafactor), size = neonsize)
-  # ggrepel::geom_text_repel(data = rdafactor, aes(x = RDA1, y = RDA2),
-  #                                        # fill = "grey", alpha = 0.5,
-  #   color = neon, label = rownames(rdafactor), size = neonsize)
+ 
 
 if(plotlabels == T){
 
-      # plotobj <- plotobj + ggrepel::geom_label_repel(data = rdascorevfa,  aes(x = CAP1, y = CAP2,
-      #                                     label = labelstot#, segment.color = "grey50"
-      #                                     # vjust = ifelse(RDA2 >= 0, -0.1, 0.7),
-      #                                     # hjust = ifelse(RDA1 >= 0, 0, 0.5)
-      #                                     ),
-      #                                     color = linecolour,
-      #                                     fill = "grey",
-      #                                     alpha = alphnumb,
-      #                                     label.size = NA,
-      #                                     # color = labelcolour,
-      #                                     size = labelsize,
-      #                                     fontface = "italic",
-      #                                     position = pos)
+     
       plotobj <- plotobj + geom_label(data = rdascorevfa,  aes(x = CAP1, y = CAP2, label = labelstot),
                                           color = linecolour, alpha = alphnumb, label.size = NA,
                                           size = labelsize, fontface = "italic")
@@ -4153,25 +3358,10 @@ plotobj <- ggplot(as.data.frame(points)) + geom_point(aes(x = fa, y = sa, size =
                               segment.color = "grey50", alpha = alphnumb+.15, 
                                          # fill = "grey", alpha = 0.5,
     color = neon, label = rownames(rdafactor), size = neonsize)
-  # ggrepel::geom_text_repel(data = rdafactor, aes(x = RDA1, y = RDA2),
-  #                                        # fill = "grey", alpha = 0.5,
-  #   color = neon, label = rownames(rdafactor), size = neonsize)
 
 if(plotlabels == T){
 
-      # plotobj <- plotobj + ggrepel::geom_label_repel(data = rdascorevfa,  aes(x = CAP1, y = MDS1,
-      #                                     label = labelstot#,segment.color = "grey50"
-      #                                     # vjust = ifelse(RDA2 >= 0, -0.1, 0.7),
-      #                                     # hjust = ifelse(RDA1 >= 0, 0, 0.5)
-      #                                     ),
-      #                                     color = linecolour,
-      #                                     fill = "grey",
-      #                                     alpha = alphnumb,
-      #                                     label.size = NA,
-      #                                     # color = labelcolour,
-      #                                     size = labelsize,
-      #                                     fontface = "italic",
-      #                                     position = pos)
+     
       plotobj <- plotobj + geom_label(data = rdascorevfa,  aes(x = CAP1, y = MDS1, label = labelstot),
                                           color = linecolour, alpha = alphnumb, label.size = NA,
                                           size = labelsize, fontface = "italic")
@@ -4296,25 +3486,11 @@ plotobj <- ggplot(as.data.frame(points)) + geom_point(aes(x = fa, y = sa, size =
                               segment.color = "grey50", alpha = alphnumb+.15, 
                                          # fill = "grey", alpha = 0.5,
     color = neon, label = rownames(rdafactor), size = neonsize)
-  # ggrepel::geom_text_repel(data = rdafactor, aes(x = RDA1, y = RDA2),
-  #                                        # fill = "grey", alpha = 0.5,
-  #   color = neon, label = rownames(rdafactor), size = neonsize)
+
 
 if(plotlabels == T){
 
-      # plotobj <- plotobj + ggrepel::geom_label_repel(data = rdascorevfa,  aes(x = CAP1, y = CAP2,
-      #                                     label = labelsint#,segment.color = "grey50"
-      #                                     # vjust = ifelse(RDA2 >= 0, -0.1, 0.7),
-      #                                     # hjust = ifelse(RDA1 >= 0, 0, 0.5)
-      #                                     ),
-      #                                     color = linecolour,
-      #                                     fill = "grey",
-      #                                     alpha = alphnumb,
-      #                                     label.size = NA,
-      #                                     # color = labelcolour,
-      #                                     size = labelsize,
-      #                                     fontface = "italic",
-      #                                     position = pos)
+      
       plotobj <- plotobj + geom_label(data = rdascorevfa,  aes(x = CAP1, y = CAP2, label = labelsint),
                                           color = linecolour, alpha = alphnumb, label.size = NA,
                                           size = labelsize, fontface = "italic")
@@ -4409,20 +3585,7 @@ plotobj <- ggplot(as.data.frame(points)) + geom_point(aes(x = fa, y = sa, size =
 
 if(plotlabels == T){
 
-      # plotobj <- plotobj + ggrepel::geom_label_repel(data = rdascorevfa,  aes(x = CAP1, y = CAP2,
-      #                                     label = labelsint
-      #                                     # segment.color = "grey50"
-      #                                     # vjust = ifelse(RDA2 >= 0, -0.1, 0.7),
-      #                                     # hjust = ifelse(RDA1 >= 0, 0, 0.5)
-      #                                     ),
-      #                                     color = linecolour,
-      #                                     fill = "grey",
-      #                                     alpha = alphnumb,
-      #                                     label.size = NA,
-      #                                     # color = labelcolour,
-      #                                     size = labelsize,
-      #                                     fontface = "italic",
-      #                                     position = pos)
+    
   
     plotobj <- plotobj + geom_label(data = rdascorevfa,  aes(x = CAP1, y = CAP2, label = labelsint),
                                           color = linecolour, alpha = alphnumb, label.size = NA,
@@ -4510,27 +3673,11 @@ plotobj <- ggplot(as.data.frame(points)) + geom_point(aes(x = fa, y = sa, size =
                               segment.color = "grey50", alpha = alphnumb+.15, 
                                          # fill = "grey", alpha = 0.5,
     color = neon, label = rownames(rdafactor), size = neonsize)
-  # ggrepel::geom_text_repel(data = rdafactor, aes(x = RDA1, y = RDA2),
-  #                                        # fill = "grey", alpha = 0.5,
-  #   color = neon, label = rownames(rdafactor), size = neonsize)
+ 
 
 if(plotlabels == T){
 
-      # plotobj <- plotobj + ggrepel::geom_label_repel(data = rdascorevfa,  aes(x = CAP1, y = CAP2,
-      #                                     label = labelsint
-      #                                     # segment.color = "grey50"
-      #                                     # vjust = ifelse(RDA2 >= 0, -0.1, 0.7),
-      #                                     # hjust = ifelse(RDA1 >= 0, 0, 0.5)
-      #                                     ),
-      #                                     color = linecolour,
-      #                                     fill = "grey",
-      #                                     alpha = alphnumb,
-      #                                     label.size = NA,
-      #                                     # color = labelcolour,
-      #                                     size = labelsize,
-      #                                     fontface = "italic",
-      #                                     position = pos)
-  
+    
     plotobj <- plotobj + geom_label(data = rdascorevfa,  aes(x = CAP1, y = CAP2, label = labelsint),
                                           color = linecolour, alpha = alphnumb, label.size = NA,
                                           size = labelsize, fontface = "italic")
@@ -4618,26 +3765,11 @@ plotobj <- ggplot(as.data.frame(points)) + geom_point(aes(x = fa, y = sa, size =
                                          # fill = "grey", alpha = 0.5,
     color = neon, label = rownames(rdafactor), size = neonsize)
   
-  # ggrepel::geom_text_repel(data = rdafactor, aes(x = CAP1, y = MDS1),
-    #                                      # fill = "grey", alpha = 0.5,
-    # color = neon, label = rownames(rdafactor), size = neonsize)
+
 
 if(plotlabels == T){
 
-      # plotobj <- plotobj + ggrepel::geom_label_repel(data = rdascorevfa,  aes(x = CAP1, y = MDS1,
-      #                                     label = labelsint,
-      #                                     # segment.color = "grey50"
-      #                                     # vjust = ifelse(RDA2 >= 0, -0.1, 0.7),
-      #                                     # hjust = ifelse(RDA1 >= 0, 0, 0.5)
-      #                                     ),
-      #                                     color = linecolour,
-      #                                     # fill = "grey",
-      #                                     alpha = alphnumb,
-      #                                     label.size = NA,
-      #                                     # color = labelcolour,
-      #                                     size = labelsize,
-      #                                     fontface = "italic",
-      #                                     position = pos)
+   
       
   plotobj <- plotobj + geom_label(data = rdascorevfa,  aes(x = CAP1, y = MDS1, label = labelsint),
                                           color = linecolour, alpha = alphnumb, label.size = NA,
@@ -5580,6 +4712,3 @@ leg.E <- c(0.13,0.84)
 # rm(df.sub, labelsA, labels)
 # rm(plotobj, rdascores, firstaxispoints, secondaxispoints, Dim1, Dim2, Radj, Radj2, df.A,  df.D,  df.F)
 ```
-
-
-#### Plot 
