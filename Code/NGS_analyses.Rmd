@@ -101,7 +101,7 @@ BW = TRUE
 
 ## Colours and labels
 ```{r labels and colours, message=FALSE, warning=FALSE}
-# Universal colours for the project
+# Universal colours for the project, selected by the author himself
 source("YM_colours.R")
 
 # Define labels for various variables
@@ -130,7 +130,7 @@ donor.labs <- c("Donor 1", "Donor 2", "Donor 3", "Donor 4", "Donor 5", "Donor 6"
 names(donor.labs) <- c("1", "2", "3", "4", "5", "6")
 
 # Function to set the working directory for saving plots
-saveplots <- function() setwd("/Projects2/Yorick/Rstudio_projects/Task1.2TransitSHIME/Data/Results/Plots")
+saveplots <- function() setwd(INSERT DIRECTORY WHERE YOU WANT TO SAVE YOUR PLOTS HERE)
 
 # Set variables RDP and otu
 RDP <- TRUE
@@ -174,13 +174,16 @@ if (RDP == TRUE) {
   test <- as.data.frame(tax_table(import_mothur(mothur_constaxonomy_file = taxfile)))
 }
 
-sharedfile = "stabilityfile.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.pick.opti_mcc.shared"
+sharedfile = "counttable.shared"
 
 # Load sampledata and alter it
 sampledata <- read.csv2("Sampledata_Illu.csv", header = TRUE, sep = ",")
 sampledata <- na.omit(sampledata)
+
+## IMPORTANT, originally, donors 4 and 6 were the other way around. We decided to swap them around so that the graphs would be visually more pleasant: The original revalue donor 4 to 6 and 6 to 4
 sampledata$Donor[sampledata$Donor == 4] <- 7; sampledata$Donor[sampledata$Donor == 6] <- 4
 sampledata$Donor[sampledata$Donor == 7] <- 6; 
+
 sampledata$Transit <- as.ordered(factor(sampledata$Transit,
                                           levels=c("FS","ST","MT", "LT")))
 sampledata$PD_Colon <- as.ordered(factor(sampledata$PD_Colon, levels=c("P", "D", "FS")))
@@ -456,12 +459,14 @@ phylobj.QMP = subset_samples(phylobj.QMP, Transit != "FS")
 # Import SCFA data for MIXOMICS
 functdata <- read.csv2("Dataframe_alt.csv", sep=",")
 # order levels and transform from continuous scale to factor
+## IMPORTANT, originally, donors 4 and 6 were the other way around. We decided to swap them around so that the graphs would be visually more pleasant: The original revalue donor 4 to 6 and 6 to 4
 functdata$Donor[functdata$Donor == 4] <- 7; functdata$Donor[functdata$Donor == 6] <- 4
 functdata$Donor[functdata$Donor == 7] <- 6; 
 functdata$Donor <- as.ordered(factor(functdata$Donor,levels=c("1","2","3","4","5","6")))
 functdata$Vessel <- as.ordered(factor(functdata$Vessel,levels=c("P","D","FS")))
 functdata$Ninetransit <- as.ordered(factor(functdata$Ninetransit,levels=c("0","1","2","3","4")))
 functdata$Transit <- as.ordered(factor(functdata$Transit,levels=c("ST","MT","LT","FS")))
+
 # Make columns numeric
 i <- c(9:34) # Specify columns you want to change
 functdata[ , i] <- apply(functdata[ , i], 2,  # Specify own function within apply
@@ -497,9 +502,10 @@ SCFAdata <- subset(functdatatrt,Ninetransit=='0'|Ninetransit=='3')
 rm(functdata, functdatatrt, functdatanet)
 ```
 
-## Percentage OTU per genus
+## Calculate the percentage of OTUs present per genus
 ```{r OTU per genus, fig.height=10, fig.width=16}
 `%nin%` = Negate(`%in%`)
+
 library(genefilter)
 phylo <- subset_samples(phylobj.prop.otu, Transit != "FS")
 taxtable <- data.frame(tax_table(phylo))
@@ -524,6 +530,7 @@ for (i in unique(combinedtable$Genus)){
     # }
     print(paste0(i, ", ",x, " of ", length(unique(combinedtable$Genus)), " genera done")); x <- x + 1
   }
+
 combinedtable2$mean <- format(round(combinedtable2$mean, 2), nsmall = 2)
 combinedtable2$SD <- format(round(combinedtable2$SD, 2), nsmall = 2)
 combinedtable2$text <- paste0(combinedtable2$mean, " ± ", combinedtable2$SD) 
@@ -546,6 +553,7 @@ check = F; if(check == T){
 if(exists("df.sig")){stop("The significantlist already exists, no need to wait for a new list")}}
 
 redo = F #Make T if you want to redo the calculations
+
 if(redo == T){
 # Absolute
 phylobj.QMP_stable <- subset_samples(phylobj.QMP, Ninetransit == 3)
@@ -563,168 +571,277 @@ for (i in unique(Top$Genus)) {
   Top3 <- data.frame(Genus = i, Abundance = max(Top2$Abundance))
   highlist <- rbind(highlist, Top3)} 
 }
-# Order with highest abundances
-sequence <- highlist[order(-highlist$Abundance),]; sequence <- sequence$Genus
-# Proportional
-phylobj.prop_2 = transform_sample_counts(phylobj.QMP, function(x) 100 * x/sum(x))
+
+# Order 'highlist' by Abundance and extract 'Genus' column
+sequence <- highlist[order(-highlist$Abundance), ]$Genus
+
+# Calculate proportional counts in 'phylobj.QMP' and filter stable samples
+phylobj.prop_2 <- transform_sample_counts(phylobj.QMP, function(x) 100 * x / sum(x))
 phylobj.prop_stable <- subset_samples(phylobj.prop_2, Ninetransit == 3)
-Top15phylobj.prop <- phylobj.prop_stable
-Top15.prop <- psmelt(Top15phylobj.prop); unique(Top15.prop$Genus)
-# Add extra column days for graphs
+
+# Create 'Top15phylobj.prop' and convert it to molten data frame
+Top15.prop <- psmelt(Top15phylobj.prop <- phylobj.prop_stable)
+
+# Convert 'Transit', 'PD_Colon', and 'Donor' factors to ordered levels
 Top.prop <- Top15.prop
 Top.prop$Transit <- as.ordered(factor(Top.prop$Transit, levels = c("ST", "MT", "LT")))
 Top.prop$PD_Colon <- as.ordered(factor(Top.prop$PD_Colon, levels = c("P", "D", "FS")))
 Top.prop$Donor <- as.ordered(factor(Top.prop$Donor, levels = c("1", "2", "3", "4", "5", "6")))
-unique(Top$Genus)%in%unique(Top.prop$Genus) 
-# Statistics
-# Non parametric to 1-way ANOVA, alternative - Kruskal-Wallis
-correction = "holm"
-# Between transits
-gglist <- list(); gglist2 <- list(); y = 1; df.grpPMP <- data.frame(); df.grpQMP <- data.frame(); statlist <- list()
-message("Kruskal-Wallis tests between transit times")
-df.pwc <- data.frame(); df.pwc2 <- data.frame(); df.sig <- data.frame()
-# PLOTS
-comparisonlistbar <- list(); x =1; y =1
+
+# Check if unique 'Genus' values in 'Top' are present in 'Top.prop'
+unique(Top$Genus) %in% unique(Top.prop$Genus)
+
+
+# Set the correction method
+correction <- "holm"
+
+# Initialize lists and data frames
+gglist <- list()
+gglist2 <- list()
+df.grpPMP <- data.frame()
+df.grpQMP <- data.frame()
+statlist <- list()
+
+# Display message about Kruskal-Wallis tests
+message("Performing Kruskal-Wallis tests between transit times")
+
+# Initialize data frames for pairwise comparisons and significant results
+df.pwc <- data.frame()
+df.pwc2 <- data.frame()
+df.sig <- data.frame()
+
+# Initialize lists for bar plot comparisons
+comparisonlistbar <- list()
+x <- 1
+y <- 1
+
 for (i in sequence) {
-  Top1 <- subset(Top, Genus == i); Top2 <- subset(Top.prop, Genus == i)
-  
-  T1 <- Top1 %>% group_by(Transit, PD_Colon) %>% summarise(SD = sd(Abundance), 
-    Abundance = mean(Abundance),Transit = Transit, PD_Colon = PD_Colon) 
-  T1<- T1[!duplicated(T1), ]; T1$min = T1$Abundance - T1$SD; T1$max = T1$Abundance + T1$SD
-    max = max(T1$max); min = min(T1$min)
+# Subset data for the specific genus in Top and Top.prop
+Top1 <- subset(Top, Genus == i)
+Top2 <- subset(Top.prop, Genus == i)
+
+# Calculate statistics for Top1
+T1 <- Top1 %>% group_by(Transit, PD_Colon) %>%
+  summarise(SD = sd(Abundance), Abundance = mean(Abundance),
+            Transit = Transit, PD_Colon = PD_Colon) 
+T1 <- T1[!duplicated(T1), ]
+T1$min <- T1$Abundance - T1$SD
+T1$max <- T1$Abundance + T1$SD
+max <- max(T1$max)
+min <- min(T1$min)
+
+# Create data frame with means and SD for Top1
+T1 <- subset(Top1, Abundance > 0)
+T1$Abundance <- as.numeric(T1$Abundance)
+T1 <- T1 %>% group_by(Transit, PD_Colon) %>%
+  summarise(SD = sd(Abundance), Abundance = mean(Abundance),
+            Transit = Transit, PD_Colon = PD_Colon)
+T1 <- T1[!duplicated(T1), ]
+T1$Genus <- i
+T1 <- subset(T1, select = c(Genus, Transit, PD_Colon, Abundance, SD))
+df.grpQMP <- rbind(df.grpQMP, T1)
+
+# Calculate statistics for Top2
+T1 <- subset(Top2, Abundance > 0)
+T1$Abundance <- as.numeric(T1$Abundance)
+T1 <- T1 %>% group_by(Transit, PD_Colon) %>%
+  summarise(SD = sd(Abundance), Abundance = mean(Abundance),
+            Transit = Transit, PD_Colon = PD_Colon)
+T1 <- T1[!duplicated(T1), ]
+T1$Genus <- i
+T1 <- subset(T1, select = c(Genus, Transit, PD_Colon, Abundance, SD))
+df.grpPMP <- rbind(df.grpPMP, T1)
+
     
-  # Create data frame with means and SD
-    T1 <- subset(Top1, Abundance > 0); T1$Abundance <- as.numeric(T1$Abundance)
-  T1 <- T1 %>% group_by(Transit, PD_Colon) %>% summarise(SD = sd(Abundance), 
-    Abundance = mean(Abundance),Transit = Transit, PD_Colon = PD_Colon); T1<- T1[!duplicated(T1),]
-  T1$Genus <- i; T1 <- subset(T1, select = c(Genus, Transit, PD_Colon, Abundance, SD))
-  df.grpQMP <- rbind(df.grpQMP, T1)
-  
-  
-  T1 <- subset(Top2, Abundance > 0); T1$Abundance <- as.numeric(T1$Abundance)
-  T1 <- T1 %>% group_by(Transit, PD_Colon) %>% summarise(SD = sd(Abundance), 
-    Abundance = mean(Abundance),Transit = Transit, PD_Colon = PD_Colon); T1<- T1[!duplicated(T1),]
-  T1$Genus <- i; T1 <- subset(T1, select = c(Genus, Transit, PD_Colon, Abundance, SD)); df.grpPMP <- rbind(df.grpPMP, T1)  
-    
-# Absolute abundance
-p <- papertheme(ggbarplot(Top1, x="Transit", y="Abundance" , fill = "Donor", 
+# Create a bar plot with absolute abundance
+p <- papertheme(ggbarplot(Top1, x = "Transit", y = "Abundance", fill = "Donor",
                   add = "mean_sd", facet.by = c("PD_Colon"), position = position_dodge())) 
-p<-p + facet_grid(PD_Colon~., labeller = labeller(PD_Colon = PD_Colon.labs)) +
-  scale_fill_manual(values = sixdonors) + scale_x_discrete(labels = c("Short", "Medium", "Long"))+
+p <- p + facet_grid(PD_Colon ~ ., labeller = labeller(PD_Colon = PD_Colon.labs)) +
+  scale_fill_manual(values = sixdonors) + scale_x_discrete(labels = c("Short", "Medium", "Long")) +
   theme(strip.background = element_rect(fill = "#D6E0F4"), strip.text.x = element_text(size = 20),
         strip.text.y = element_text(size = 20, angle = 270), legend.text = element_text(size = 18), 
         legend.title = element_text(size = 18, face = "bold"),
         legend.title.align = 0.5) + xlab("Transit time") +
-  ylab(expression(paste("Absolute abundance (cells m",L^{"-1"}, ")"))) +
+  ylab(expression(paste("Absolute abundance (cells m", L^{"-1"}, ")"))) +
   guides(fill = guide_legend("Donor", ncol = 6)) + theme(strip.text.y = element_blank())
-  if(x%%4 != 0){p <- p + theme(legend.position = "none")}
-p3 <- papertheme(ggbarplot(Top1, x="Transit", y="Abundance" , fill = "Transit", 
+if (x %% 4 != 0) {
+  p <- p + theme(legend.position = "none")
+}
+
+# Create another bar plot or box plot with absolute abundance
+p3 <- papertheme(ggbarplot(Top1, x = "Transit", y = "Abundance", fill = "Transit", 
                            add = "mean_sd", facet.by = c("PD_Colon")))
-if(barstransit == F){
-  p3 <- papertheme(ggboxplot(Top1, x="Transit", y="Abundance" , fill = "Transit", facet.by = c("PD_Colon")))
-  } 
-p3 <- p3 + facet_grid(PD_Colon~., labeller = labeller(PD_Colon = PD_Colon.labs)) +
-    scale_fill_manual(values = transitcolors) + scale_x_discrete(labels = c("Short", "Medium", "Long"))+
-    theme(strip.background = element_rect(fill = "#D6E0F4"), strip.text.x = element_text(size = 20),
-    strip.text.y = element_text(size = 20, angle = 270), legend.text = element_text(size = 18), 
-    legend.title = element_text(size = 18, face = "bold"),
-    legend.title.align = 0.5) + xlab("Transit time") +
-  ylab(expression(paste("Absolute abundance (cells m",L^{"-1"}, ")"))) + 
-  guides(fill = guide_legend("Transit", ncol = 5)) +
-  theme(axis.title.y = element_blank(), axis.text.y=element_blank(), axis.ticks.y = element_blank()) 
-if(x%%4 != 0){p3 <- p3 + theme(legend.position = "none")}
-gen = i
-ymax = max(ggplot_build(p)$layout$panel_scales_y[[1]]$range$range)
-message(paste0("Quantitative - ", round(100*x/length(sequence)), "%"))
-plotstat <- statplot(dataframe = Top1, AboveZero = T, ymax = ymax) + theme(legend.position = "none")
-ymax = max(ggplot_build(plotstat)$layout$panel_scales_y[[1]]$range$range); ymin = min(ggplot_build(p)$layout$panel_scales_y[[1]]$range$range)
-plotstat <- plotstat + scale_y_continuous(limits = c(ymin, ymax))
-if(is.infinite(ymax)){ymax = 1}; if(is.infinite(ymin)){ymin = 0}
-plot1 <- ggarrange(p + theme(legend.position = "none") +scale_y_continuous(limits = c(ymin, ymax)) , plotstat, widths = c(1,0.3))
-stats <- statplot(dataframe = Top1, AboveZero = T, plot = "ymax", showstat = F, yaxis = T)
-### Calculate p values and put them in a data frame
-  Top5 <- subset(Top1, Abundance > 0); Top5$Abundance <- as.numeric(Top5$Abundance)
-  
- #### Proximal colon
-  my_data5 <- subset(Top5, PD_Colon == "P"); unique(my_data5$Transit); my_data5$Transit <- droplevels(my_data5$Transit)
-  
-  skip_to_next <- FALSE
-  tryCatch(res.kruskal <- my_data5 %>% rstatix::kruskal_test(Abundance ~ Transit), error = function(e) {skip_to_next <<- TRUE
-  message(crayon::red("Only 1 transit time has", gen,  "in the proximal colon!
-                      Skipped to next")) })
-  
-  if(skip_to_next == FALSE){
-  res.kruskal <- my_data5 %>% rstatix::kruskal_test(Abundance ~ Transit)
-  pvaluep <- res.kruskal$p; message(pvaluep); effectsize2 <- Effectsize(my_data5)
-  }else{
-    pvaluep <- 1
-    effectsize2 <- "Effectsize does not matter"
-  }
-  df.prox.qmp <- data.frame(genus = gen, vessel = "Proximal colon", pvalue = pvaluep)
- 
-  #### Distal colon
-  my_data5 <- subset(Top5, PD_Colon == "D"); unique(my_data5$Transit); my_data5$Transit <- droplevels(my_data5$Transit)
-  
-  skip_to_next <- FALSE
-  tryCatch(res.kruskal <- my_data5 %>% rstatix::kruskal_test(Abundance ~ Transit), error = function(e) {skip_to_next <<- TRUE
-  message(crayon::red("Only 1 transit time has", gen,  "in the distal colon!
-                      Skipped to next")) })
-  
-  if(skip_to_next == FALSE){
-  res.kruskal <- my_data5 %>% rstatix::kruskal_test(Abundance ~ Transit)
-  pvaluep <- res.kruskal$p; message(pvaluep); effectsize2 <- Effectsize(my_data5)
-  }else{
-    pvaluep <- 1
-    effectsize2 <- "Effectsize does not matter"
-  }
-  df.dist.qmp <- data.frame(genus = gen, vessel = "Distal colon", pvalue = pvaluep)
-  
-  
-# Proportional abundance
-p2 <- papertheme(ggbarplot(Top2, x="Transit", y="Abundance" , fill = "Donor", 
-                  add = "mean_sd", facet.by = c("PD_Colon"), position = position_dodge())) 
-  if(bars == F){ 
-    p2 <- papertheme(ggboxplot(Top2, x="Transit", y="Abundance" , fill = "Donor", 
-                              facet.by = c("PD_Colon")))
-  }
-p2<-p2 + facet_grid(PD_Colon~., labeller = labeller(PD_Colon = PD_Colon.labs)) +
-  scale_fill_manual(values = sixdonors) + scale_x_discrete(labels = c("Short", "Medium", "Long"))+
+if (barstransit == F) {
+  p3 <- papertheme(ggboxplot(Top1, x = "Transit", y = "Abundance", fill = "Transit", facet.by = c("PD_Colon")))
+} 
+p3 <- p3 + facet_grid(PD_Colon ~ ., labeller = labeller(PD_Colon = PD_Colon.labs)) +
+  scale_fill_manual(values = transitcolors) + scale_x_discrete(labels = c("Short", "Medium", "Long")) +
   theme(strip.background = element_rect(fill = "#D6E0F4"), strip.text.x = element_text(size = 20),
         strip.text.y = element_text(size = 20, angle = 270), legend.text = element_text(size = 18), 
         legend.title = element_text(size = 18, face = "bold"),
-        legend.title.align = 0.5) + xlab("Transit time") + ylab("Proportional abundance (%)") +
-  guides(fill = guide_legend("Donor", ncol = 6)) + theme(strip.text.y = element_blank())
-  if(x%%4 != 0){p2 <- p2 + theme(legend.position = "none")}
-  # + stat_compare_means(comparisons = my_comparisons, label = "p.signif", hide.ns = T, hide.NS = T) # Add significance levels
-  # stat_compare_means(label.y = 50) 
-p4 <- papertheme(ggbarplot(Top2, x="Transit", y="Abundance" , fill = "Transit", 
-                           add = "mean_sd", facet.by = c("PD_Colon")))
-if(barstransit == F){
-  p4 <- papertheme(ggboxplot(Top2, x="Transit", y="Abundance" , fill = "Transit", facet.by = c("PD_Colon")))
-  } 
-p4 <- p4 + facet_grid(PD_Colon~., labeller = labeller(PD_Colon = PD_Colon.labs)) +
-    scale_fill_manual(values = transitcolors) + scale_x_discrete(labels = c("Short", "Medium", "Long"))+
-    theme(strip.background = element_rect(fill = "#D6E0F4"), strip.text.x = element_text(size = 20),
-    strip.text.y = element_text(size = 20, angle = 270), legend.text = element_text(size = 18), 
-    legend.title = element_text(size = 18, face = "bold"),
-    legend.title.align = 0.5) + xlab("Transit time") + ylab("Proportional abundance (%)") + 
+        legend.title.align = 0.5) + xlab("Transit time") +
+  ylab(expression(paste("Absolute abundance (cells m", L^{"-1"}, ")"))) + 
   guides(fill = guide_legend("Transit", ncol = 5)) +
-  theme(axis.title.y = element_blank(), axis.text.y=element_blank(), axis.ticks.y = element_blank()) 
-if(x%%4 != 0){p4 <- p4 + theme(legend.position = "none")}
-# plot2 <- ggarrange(p2, p4, widths = c(1,0.3))
-ymax = max(ggplot_build(p2)$layout$panel_scales_y[[1]]$range$range)
+  theme(axis.title.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank()) 
+if (x %% 4 != 0) {
+  p3 <- p3 + theme(legend.position = "none")
+}
+
+# Calculate the maximum y-axis value for the plot
+gen = i
+ymax = max(ggplot_build(p)$layout$panel_scales_y[[1]]$range$range)
+message(paste0("Quantitative - ", round(100 * x / length(sequence)), "%"))
+
+# Create a statistical plot for the data
+plotstat <- statplot(dataframe = Top1, AboveZero = T, ymax = ymax) + theme(legend.position = "none")
+ymax = max(ggplot_build(plotstat)$layout$panel_scales_y[[1]]$range$range)
+ymin = min(ggplot_build(p)$layout$panel_scales_y[[1]]$range$range)
+plotstat <- plotstat + scale_y_continuous(limits = c(ymin, ymax))
+if (is.infinite(ymax)) {
+  ymax = 1
+}
+if (is.infinite(ymin)) {
+  ymin = 0
+}
+
+# Create a composite plot
+plot1 <- ggarrange(p + theme(legend.position = "none") + scale_y_continuous(limits = c(ymin, ymax)), 
+                   plotstat, widths = c(1, 0.3))
+
+# Calculate statistics and put them in a data frame
+stats <- statplot(dataframe = Top1, AboveZero = T, plot = "ymax", showstat = F, yaxis = T)
+Top5 <- subset(Top1, Abundance > 0)
+Top5$Abundance <- as.numeric(Top5$Abundance)
+
+  
+ #### Proximal colon
+ # For Proximal Colon
+my_data5 <- subset(Top5, PD_Colon == "P")
+unique_transit <- unique(my_data5$Transit)
+my_data5$Transit <- droplevels(my_data5$Transit)
+
+skip_to_next <- FALSE
+tryCatch(
+  {
+    res.kruskal <- my_data5 %>% rstatix::kruskal_test(Abundance ~ Transit)
+  },
+  error = function(e) {
+    skip_to_next <<- TRUE
+    message(crayon::red("Only 1 transit time has", gen, "in the proximal colon! Skipped to next"))
+  }
+)
+
+if (skip_to_next == FALSE) {
+  res.kruskal <- my_data5 %>% rstatix::kruskal_test(Abundance ~ Transit)
+  pvaluep <- res.kruskal$p
+  message(pvaluep)
+  effectsize2 <- Effectsize(my_data5)
+} else {
+  pvaluep <- 1
+  effectsize2 <- "Effectsize does not matter"
+}
+df.prox.qmp <- data.frame(genus = gen, vessel = "Proximal colon", pvalue = pvaluep)
+
+# For Distal Colon
+my_data5 <- subset(Top5, PD_Colon == "D")
+unique_transit <- unique(my_data5$Transit)
+my_data5$Transit <- droplevels(my_data5$Transit)
+
+skip_to_next <- FALSE
+tryCatch(
+  {
+    res.kruskal <- my_data5 %>% rstatix::kruskal_test(Abundance ~ Transit)
+  },
+  error = function(e) {
+    skip_to_next <<- TRUE
+    message(crayon::red("Only 1 transit time has", gen, "in the distal colon! Skipped to next"))
+  }
+)
+
+if (skip_to_next == FALSE) {
+  res.kruskal <- my_data5 %>% rstatix::kruskal_test(Abundance ~ Transit)
+  pvaluep <- res.kruskal$p
+  message(pvaluep)
+  effectsize2 <- Effectsize(my_data5)
+} else {
+  pvaluep <- 1
+  effectsize2 <- "Effectsize does not matter"
+}
+df.dist.qmp <- data.frame(genus = gen, vessel = "Distal colon", pvalue = pvaluep)
+
+  
+  
+# Proportional abundance
+# Proportional Plots for Donor
+p2 <- papertheme(ggbarplot(Top2, x = "Transit", y = "Abundance", fill = "Donor",
+                           add = "mean_sd", facet.by = c("PD_Colon"), position = position_dodge()))
+
+if (bars == F) {
+  p2 <- papertheme(ggboxplot(Top2, x = "Transit", y = "Abundance", fill = "Donor",
+                             facet.by = c("PD_Colon")))
+}
+
+p2 <- p2 + facet_grid(PD_Colon ~ ., labeller = labeller(PD_Colon = PD_Colon.labs)) +
+  scale_fill_manual(values = sixdonors) + scale_x_discrete(labels = c("Short", "Medium", "Long")) +
+  theme(strip.background = element_rect(fill = "#D6E0F4"), strip.text.x = element_text(size = 20),
+        strip.text.y = element_text(size = 20, angle = 270), legend.text = element_text(size = 18),
+        legend.title = element_text(size = 18, face = "bold"), legend.title.align = 0.5) +
+  xlab("Transit time") + ylab("Proportional abundance (%)") +
+  guides(fill = guide_legend("Donor", ncol = 6)) + theme(strip.text.y = element_blank())
+
+if (x %% 4 != 0) {
+  p2 <- p2 + theme(legend.position = "none")
+}
+
+# Proportional Plots for Transit
+p4 <- papertheme(ggbarplot(Top2, x = "Transit", y = "Abundance", fill = "Transit",
+                           add = "mean_sd", facet.by = c("PD_Colon")))
+
+if (barstransit == F) {
+  p4 <- papertheme(ggboxplot(Top2, x = "Transit", y = "Abundance", fill = "Transit", facet.by = c("PD_Colon")))
+}
+
+p4 <- p4 + facet_grid(PD_Colon ~ ., labeller = labeller(PD_Colon = PD_Colon.labs)) +
+  scale_fill_manual(values = transitcolors) + scale_x_discrete(labels = c("Short", "Medium", "Long")) +
+  theme(strip.background = element_rect(fill = "#D6E0F4"), strip.text.x = element_text(size = 20),
+        strip.text.y = element_text(size = 20, angle = 270), legend.text = element_text(size = 18),
+        legend.title = element_text(size = 18, face = "bold"), legend.title.align = 0.5) +
+  xlab("Transit time") + ylab("Proportional abundance (%)") +
+  guides(fill = guide_legend("Transit", ncol = 5)) +
+  theme(axis.title.y = element_blank(), axis.text.y = element_blank(), axis.ticks.y = element_blank())
+
+if (x %% 4 != 0) {
+  p4 <- p4 + theme(legend.position = "none")
+}
+
+ymax <- max(ggplot_build(p2)$layout$panel_scales_y[[1]]$range$range)
 message("Proportional")
-plotstat <- statplot(dataframe = Top2, AboveZero = T, ymax = ymax); boxlegend <-cowplot::get_legend(plotstat)
-legends <- ggdraw(plot_grid(NULL,cowplot::get_legend(p2), boxlegend,NULL, ncol=4, align='v'))
-ymax = max(xx <- ggplot_build(plotstat)$layout$panel_scales_y[[1]]$range$range)
-ymin = min(ggplot_build(p2)$layout$panel_scales_y[[1]]$range$range)
-if(is.infinite(ymax)){ymax = 1}; if(is.infinite(ymin)){ymin = 0}
+
+plotstat <- statplot(dataframe = Top2, AboveZero = T, ymax = ymax)
+boxlegend <- cowplot::get_legend(plotstat)
+legends <- ggdraw(plot_grid(NULL, cowplot::get_legend(p2), boxlegend, NULL, ncol = 4, align = 'v'))
+
+ymax <- max(ggplot_build(plotstat)$layout$panel_scales_y[[1]]$range$range)
+ymin <- min(ggplot_build(p2)$layout$panel_scales_y[[1]]$range$range)
+
+if (is.infinite(ymax)) {
+  ymax <- 1
+}
+if (is.infinite(ymin)) {
+  ymin <- 0
+}
+
 plotstat <- plotstat + scale_y_continuous(limits = c(ymin, ymax)) + theme(legend.position = "none")
-p2 <- p2 + theme(legend.position = "none") + scale_y_continuous(limits = c(ymin, ymax)); box <- box + theme(legend.position = "none")
-gen = i; plot2 <- ggarrange(p2, plotstat, widths = c(1,0.3))
+p2 <- p2 + theme(legend.position = "none") + scale_y_continuous(limits = c(ymin, ymax))
+box <- box + theme(legend.position = "none")
+gen = i
+plot2 <- ggarrange(p2, plotstat, widths = c(1, 0.3))
 stats2 <- statplot(dataframe = Top2, AboveZero = T, plot = "ymax", showstat = F, yaxis = T)
-### Calculate p values and put them in a data frame
-  Top5 <- subset(Top2, Abundance > 0); Top5$Abundance <- as.numeric(Top5$Abundance)
+
+# Calculate p values and put them in a data frame
+Top5 <- subset(Top2, Abundance > 0)
+Top5$Abundance <- as.numeric(Top5$Abundance)
+
   
  #### Proximal colon
   my_data5 <- subset(Top5, PD_Colon == "P"); unique(my_data5$Transit); my_data5$Transit <- droplevels(my_data5$Transit)
@@ -846,6 +963,7 @@ phylobj.QMP_genus <- subset_taxa(phylobj.QMP_stable_genus, Genus == i)
 phylobj.prop_genus <- subset_taxa(phylobj.prop_stable_genus, Genus == i)
 df.QMP_otu <- psmelt(phylobj.QMP_otu); df.QMP_genus <- psmelt(phylobj.QMP_genus) 
 df.prop_otu <- psmelt(phylobj.prop_otu); df.prop_genus <- psmelt(phylobj.prop_genus) 
+
 # Add extra column days for graphs - Absolute abundance
 df.QMP_otu$Transit <- as.ordered(factor(df.QMP_otu$Transit, levels = c("ST", "MT", "LT")))
 df.QMP_otu$PD_Colon <- as.ordered(factor(df.QMP_otu$PD_Colon, levels = c("P", "D", "FS")))
@@ -853,6 +971,7 @@ df.QMP_otu$Donor <- as.ordered(factor(df.QMP_otu$Donor, levels = c("1", "2", "3"
 df.QMP_genus$Transit <- as.ordered(factor(df.QMP_genus$Transit, levels = c("ST", "MT", "LT")))
 df.QMP_genus$PD_Colon <- as.ordered(factor(df.QMP_genus$PD_Colon, levels = c("P", "D", "FS")))
 df.QMP_genus$Donor <- as.ordered(factor(df.QMP_genus$Donor, levels = c("1", "2", "3", "4", "5", "6")))
+
 # Add extra column days for graphs - Proportional abundance
 df.prop_otu$Transit <- as.ordered(factor(df.prop_otu$Transit, levels = c("ST", "MT", "LT")))
 df.prop_otu$PD_Colon <- as.ordered(factor(df.prop_otu$PD_Colon, levels = c("P", "D", "FS")))
@@ -860,7 +979,8 @@ df.prop_otu$Donor <- as.ordered(factor(df.prop_otu$Donor, levels = c("1", "2", "
 df.prop_genus$Transit <- as.ordered(factor(df.prop_genus$Transit, levels = c("ST", "MT", "LT")))
 df.prop_genus$PD_Colon <- as.ordered(factor(df.prop_genus$PD_Colon, levels = c("P", "D", "FS")))
 df.prop_genus$Donor <- as.ordered(factor(df.prop_genus$Donor, levels = c("1", "2", "3", "4", "5", "6")))
-plotlist <- list(); y = 1    
+plotlist <- list(); y = 1  
+
 plot <- papertheme(ggbarplot(df.QMP_genus, x="Transit", y="Abundance" , fill = "Donor", 
                   add = "mean_sd", facet.by = c("PD_Colon"), position = position_dodge())) +
   facet_grid(PD_Colon~., labeller = labeller(PD_Colon = PD_Colon.labs)) +
@@ -948,100 +1068,6 @@ if(ppt == T){
 ```
 
 
-# Dirichlet Multinomial Mixtures
-```{r Dirichlet Multinomial Mixtures}
-library(microbiome)
-library(DirichletMultinomial)
-library(reshape2)
-library(magrittr)
-library(dplyr)
-
-pseq1 <- prune_taxa(taxa_names(phylobj.QMP.otu) != "Otu00002", phylobj.QMP.otu )
-pseq1 <- prune_taxa(taxa_names(pseq1) != "Otu00009", pseq1 )
-
-pseq <- transform_sample_counts(aggregate_taxa(subset_samples(pseq1, Ninetransit ==3), "Genus"), function(x) 1 * x/sum(x))
-pseqOTU <- as.data.frame(otu_table(pseq))
-pseqST <- as.data.frame(sample_data(subset_samples(pseq, Transit == "LT")))
-
-pseqOTUST <- subset(pseqOTU, select = c(row.names(pseqST)))
-
-
-
-full <- FALSE
-.qualitative <- DirichletMultinomial:::.qualitative
-dev.off <- function(...) invisible(grDevices::dev.off(...))
-
-# Data
-fl <- system.file(package="DirichletMultinomial", "extdata", "Twins.csv")
-count <- t(as.matrix(read.csv(fl, row.names=1)))
- count[1:5, 1:3]
-
-cnts <- log10(colSums(count))
-densityplot(cnts, xlim=range(cnts),xlab="Taxon representation (log 10 count)")
-
-
-
-if (full) {
-fit <- mclapply(1:7, dmn, count=count, verbose=TRUE)
-save(fit, file=file.path(tempdir(), "fit.rda"))
-} else data(fit)
-fit[[4]]
-
-
-
-lplc <- sapply(fit, laplace)
-plot(lplc, type="b", xlab="Number of Dirichlet Components",ylab="Model Fit")
-
-(best <- fit[[which.min(lplc)]])
-
-
-
-mixturewt(best)
-head(mixture(best), 3)
-splom(log(fitted(best)))
-
-
-p0 <- fitted(fit[[1]], scale=TRUE) # scale by theta
-p4 <- fitted(best, scale=TRUE)
-colnames(p4) <- paste("m", 1:4, sep="")
-(meandiff <- colSums(abs(p4 - as.vector(p0))))
-sum(meandiff)
-
-
-
-diff <- rowSums(abs(p4 - as.vector(p0)))
-o <- order(diff, decreasing=TRUE)
-cdiff <- cumsum(diff[o]) / sum(diff)
-df <- head(cbind(Mean=p0[o], p4[o,], diff=diff[o], cdiff), 10)
-
-heatmapdmn(count, fit[[1]], best, 30)
-
-
-
-
-# Generative classifier
-fl <- system.file(package="DirichletMultinomial", "extdata", "TwinStudy.t")
-pheno0 <- scan(fl)
-lvls <- c("Lean", "Obese", "Overwt")
-pheno <- factor(lvls[pheno0 + 1], levels=lvls)
-names(pheno) <- rownames(count)
-table(pheno)
-
-
-counts <- lapply(levels(pheno), csubset, count, pheno)
-sapply(counts, dim)
-
-keep <- c("Lean", "Obese")
-count <- count[pheno %in% keep,]
-pheno <- factor(pheno[pheno %in% keep], levels=keep)
-
-
-
-
-
-
-```
-
 # Mixomics - based on http://mixomics.org/mixdiablo/diablo-tcga-case-study/
 ## To begin
 ```{r Starting with Mixomics, fig.height=10, fig.width=10}
@@ -1057,8 +1083,7 @@ library(igraph)
 phylobj.QMP_stable <- subset_samples(phylobj.QMP, Ninetransit == 3)
 phylobj.QMP_stable <- subset_samples(phylobj.prop, Ninetransit == 3)
 phylobj.QMP_stable <- aggregate_taxa(phylobj.QMP_stable, "Genus")
-# phylobj.QMP_stable <- subset_samples(phylobj.QMP.otu, Ninetransit == 3)
-# phylobj.QMP_stable <- subset_samples(phylobj.prop.otu, Ninetransit == 3)
+
 
 if(subsetcolon ==T){phylobj.QMP_stable <- subset_samples(phylobj.QMP_stable, PD_Colon == subsetvessel)}
 # 
@@ -1141,6 +1166,7 @@ row.names(SCFAdata_table) <- SCFAdata_table$Samplenumber
 SCFAdata_table <- subset(SCFAdata_table, select = c("Acetate", "Propionate", "Isobutyrate", "Butyrate",
                                                     "Isovalerate", "Valerate", "Isocaproate", "Caproate", "Heptanoate",
                                                     "Octanoic.acid"))
+
 # Re-check row names
 row.names(sampleinfo) %in% row.names(genus_table)
 row.names(SCFAdata_table) %in% row.names(genus_table)
@@ -1158,7 +1184,9 @@ data = list(genera = genus_table,
             cells = count_table,
             SCFA = SCFAdata_table
             )
+
 test <- data.frame(genera = row.names(genus_table),SCFA = row.names(SCFAdata_table),cells = row.names(count_table))
+
 ## Check their dimension
 lapply(data, dim) 
 
@@ -1386,7 +1414,7 @@ auc.splsda = auroc(final.diablo.model, roc.block = "cells", roc.comp = 2, print 
 
 
 
-# Mixomics - NGS and SCFA -sPLS
+# Figure S12 - Mixomics - NGS and SCFA -sPLS
 ## To begin
 ```{r Starting with Mixomics, fig.height=10, fig.width=10}
 subsetcolon = T; subsetvessel = "P"
@@ -1722,705 +1750,38 @@ network <- network(final.spls.liver, comp = 1:2,
 
 
 
-# Mixomics - OTU NGS and SCFA -sPLS
-## To begin
-```{r Starting with Mixomics, fig.height=10, fig.width=10}
-subsetcolon = T; subsetvessel = "P"
-otus <- T
 
-library(mixOmics) # import the mixOmics library
-library(igraph)
-# Check the dimensions. The distribution of class labels is also examined. Make sure that the rows are the same. Note that the dataframes in the data list should be named. 
 
 
-# Extract genus table from phylobj
-phylobj.QMP_stable <- subset_samples(phylobj.QMP.otu, Ninetransit == 3)
-# phylobj.QMP_stable <- subset_samples(phylobj.prop, Ninetransit == 3)
 
-topX_genera <- F
-if(otus ==F){
-if(topX_genera == T){
-phylobj.QMP_stable <- aggregate_top_taxa(phylobj.QMP_stable, top = 50, "Genus")}else{
-  phylobj.QMP_stable <- aggregate_taxa(phylobj.QMP_stable, "Genus")
-}}
-# 
-# phylobj.QMP_stable <- subset_samples(phylobj.QMP.otu, Ninetransit == 3)
-# phylobj.QMP_stable <- subset_samples(phylobj.prop.otu, Ninetransit == 3)
-
-if(subsetcolon ==T){phylobj.QMP_stable <- subset_samples(phylobj.QMP_stable, PD_Colon == subsetvessel)}
-# 
-genus_table <- as.data.frame(t(otu_table(phylobj.QMP_stable)))
-
-
-
-
-if(otus ==T){
-  genusbu <- subset(genus_table, select = c("Otu00001"))
-  for(i in unique(colnames(genus_table))){
-  df <- subset(genus_table, select = c(i))
-
-  m =i
-  if(stringr::str_detect(m, "Otu0000")){
-      y <- str_replace(m, "Otu0000", "OTU")
-    }else{if(stringr::str_detect(m, "Otu000")){
-      y <- str_replace(m, "Otu000", "OTU")
-    }else{if(stringr::str_detect(m, "Otu00")){
-      y <- str_replace(m, "Otu00", "OTU")
-    }else{if(stringr::str_detect(m, "Otu0")){
-      y <- str_replace(m, "Otu0", "OTU")
-    }}}}
-
- colnames(df) <- c(y)
- genusbu <- cbind(genusbu, df)
-  }
-  genusbu <- subset(genusbu, select = -c(Otu00001))
-genus_table <- genusbu
-}
-
-
-
-# Extract sampleinfo from phyloseq object
-sampleinfo <- data.frame(sample_data(phylobj.QMP_stable))
-if(subsetcolon ==T){sampleinfo <- subset(sampleinfo, PD_Colon == subsetvessel)}
-# 
-
-
-
-# Extract VFA data and melt with sampleinfo
-SCFAdata <- read.csv2("netSCFAproduction.csv", sep = ",")
-if(subsetcolon ==T){SCFAdata <- subset(SCFAdata, Vessel == subsetvessel)}
-
-SCFAdata_table <- merge(sampleinfo, SCFAdata, by="Samplenumber")
-row.names(SCFAdata_table) <- SCFAdata_table$Samplenumber
-SCFAdata_table <- subset(SCFAdata_table, select = c("Acetate", "Propionate", "Isobutyrate", "Butyrate",
-                                                    "Isovalerate", "Valerate", "Isocaproate", "Caproate", "Heptanoate",
-                                                    "Octanoic.acid"))
-test <- data.frame(sampleinfo, x = sampleinfo$Samplenumber %in% SCFAdata$Samplenumber)
-test <- subset(test, x == F); warning(paste(test$Samplenumber, "is conflicting!"))
-
-
-# Extract SCFA relative to nutrient load
-SCFA_loaddata <- read.csv2("SCFA_load.csv", sep = ",")
-
-SCFAloaddata_table <- merge(sampleinfo, SCFA_loaddata, by="Samplenumber")
-row.names(SCFAloaddata_table) <- SCFAloaddata_table$Samplenumber
-SCFAloaddata_table <- subset(SCFAloaddata_table, select = c("Acet_load",   "Prop_load",    
-"Buty_load",     "Val_load",      "Cap_load"   ,   "Hep_load"  ,    "Oct_load" ,     "Isoval_load" ,  "Isobut_load"))
-test <- data.frame(sampleinfo, x = sampleinfo$Samplenumber %in% SCFA_loaddata$Samplenumber)
-test <- subset(test, x == F); warning(paste(test$Samplenumber, "is conflicting!"))
-
-# Extract cell count tables and melt with sampleinfo
-Countdata <- read.csv2("netcellrate.csv", sep = ",")
-sampleinfo2 <- subset(sampleinfo, select = c(Samplenumber, Donor, Transit, PD_Colon, Date, Ninetransit, Day))
-count_table <- merge(sampleinfo2, Countdata, by.x="Samplenumber", by.y = "Nr")
-row.names(count_table) <- count_table$Samplenumber
-count_table <- subset(count_table, select = c("meantot", "meanperc", "meanint"))
-test <- data.frame(sampleinfo, x = sampleinfo$Samplenumber %in% Countdata$Nr)
-test <- subset(test, x == F); warning(paste(test$Samplenumber, "is conflicting!"))
-
-# Remove sample 114, because its missing in the SCFA data
-genus_table <- rownames_to_column(genus_table)
-genus_table <- subset(genus_table, rowname!=114)
-row.names(genus_table) <- genus_table$rowname
-genus_table <- subset(genus_table, select = -c(rowname))
-sampleinfo <- subset(sampleinfo, Samplenumber !=114)
-
-SCFAloaddata_table <- rownames_to_column(SCFAloaddata_table)
-SCFAloaddata_table <- subset(SCFAloaddata_table,rowname!=114)
-
-count_table <- rownames_to_column(count_table)
-count_table <- subset(count_table, rowname!=114)
-row.names(count_table) <- count_table$rowname
-count_table <- subset(count_table, select = -c(rowname))
-
-
-SCFAdata_table <- merge(sampleinfo, SCFAdata, by="Samplenumber")
-row.names(SCFAdata_table) <- SCFAdata_table$Samplenumber
-SCFAdata_table <- subset(SCFAdata_table, select = c("Acetate", "Propionate", "Isobutyrate", "Butyrate",
-                                                    "Isovalerate", "Valerate", "Isocaproate", "Caproate", "Heptanoate",
-                                                    "Octanoic.acid"))
-
-
-SCFAloaddata_table <- merge(sampleinfo, SCFA_loaddata, by="Samplenumber")
-row.names(SCFAloaddata_table) <- SCFAloaddata_table$Samplenumber
-SCFAloaddata_table <- subset(SCFAloaddata_table, select = c("Acet_load",   "Prop_load",    
-"Buty_load",     "Val_load",      "Cap_load"   ,   "Hep_load"  ,    "Oct_load" ,     "Isoval_load" ,  "Isobut_load"))
-# Re-check row names
-row.names(sampleinfo) %in% row.names(genus_table)
-row.names(SCFAdata_table) %in% row.names(genus_table)
-row.names(SCFAdata_table) %in% row.names(sampleinfo)
-row.names(count_table) %in% row.names(sampleinfo)
-sampleinfo <- sampleinfo[order(as.numeric(row.names(sampleinfo))), ]
-SCFAdata_table <- SCFAdata_table[order(as.numeric(row.names(SCFAdata_table))), ]
-SCFAdata_table[] <- lapply(SCFAdata_table, as.numeric)
-
-SCFAloaddata_table <- SCFAloaddata_table[order(as.numeric(row.names(SCFAloaddata_table))), ]
-SCFAloaddata_table[] <- lapply(SCFAloaddata_table, as.numeric)
-
-genus_table <- genus_table[order(as.numeric(row.names(genus_table))), ]
-genus_table[] <- lapply(genus_table, as.numeric)
-count_table <- count_table[order(as.numeric(row.names(count_table))), ]
-count_table[] <- lapply(count_table, as.numeric)
-## set a list of all the X dataframes
-data = list(genera = genus_table, 
-            SCFA_load = SCFAloaddata_table,
-            SCFA = SCFAdata_table)
-test <- data.frame(genera = row.names(genus_table),
-                   SCFAload = row.names(SCFAloaddata_table),
-                   SCFA = row.names(SCFAdata_table))
-## Check their dimension
-lapply(data, dim) 
-
-## Set the response variable as the Y df
-Y = data.frame(Transit=sampleinfo$Transit, Donor = sampleinfo$Donor, PD_Colon = sampleinfo$PD_Colon, row = sampleinfo$Samplenumber)
-row.names(Y) = Y$row; Y = subset(Y, select = -c(row))
-Y = as.matrix(Y)
-Y = sampleinfo$Transit
-summary(Y)
-sampledata <- sampleinfo
-
-result.diablo.tcga <- block.plsda(data, Y) # run the method
-plotIndiv(result.diablo.tcga) # plot the samples
-plotVar(result.diablo.tcga) # plot the variables
-
-# 
-X <- data$genera
-Y <- data$SCFA
-# Y <- data$SCFA_load
-```
-
-
-## Initial Analysis - Preliminary Analysis with PCA
-Both datasets should be explored prior to any form of analysis. This will aid in making decisions in constructing the best model possible. PCA is an unsupervised, exploratory method that is useful here. When using PCA on these datasets, both should be centered and scaled due to the varying scales of each variables (especially the Y dataframe). It is preferable to first run a PCA with a large number of components (i.e. ncomp = 10). Then, use the ‘elbow’ (a sudden drop) on the barplot to choose the final number of PCs. Further information can be found in the PCA Methods Page.
-```{r Initial Analysis - Pairwise PLS Comparisons, fig.height=10, fig.width=10}
-set.seed(0604)
-# Trim dataframes because:
-# Error: columns with zero variance in 'X': 1,3,5,7,25,35,46,47,48,51,65,80. Remove these columns before scaling.
-
-
-    X <- subset(data$genera, select =
-    -c(26,39,85,96,101,106,133,157,158,191,193,197,199,203,207,211,213,215,216,236,255,270,278,279,286,289,291,294,295,304,305,309,314,322,332,339,341,349,351,355,357,362,363,381,388,390,393,396,400))
-
-    X <- subset(X, select =
-    -c(26,39,85,95,105,132,156,157,192,195,197,201,205,209,211,213,214,253,267,276,284,287,292,293,302,304,307,312,315,319,329,336,338,348,351,352,357,358,376,383,385,388,391,395))
-# 
-# Error: columns with zero variance in 'X': 7,10. Remove these columns before scaling.
-Y <- subset(data$SCFA, select = -c(7,10))
-
-
-pca.genera <- pca(X, ncomp = 10, center = TRUE, scale = TRUE)
-pca.SCFA <- pca(Y, ncomp = 8, center = TRUE, scale = TRUE)
-
-plot(pca.genera)
-plot(pca.SCFA)
-
-
-# The explained variance of each Principal Components for both datasets can be seen in Figure 1. In both cases, use of the 'elbow method' indicates two components would be sufficient. Beyond this, the added components provide little novel information. The next step is to assess the clustering of samples in the Principal Component subspace. 
-plotIndiv(pca.genera, comp = c(1, 2), 
-          group = sampledata$Transit, 
-          ind.names = row.names(sampledata), 
-          legend = TRUE, title = 'Genera, PCA comp 1 - 2')
-
-plotIndiv(pca.SCFA, comp = c(1, 2), 
-          group = sampledata$Transit, 
-          ind.names = row.names(sampledata), 
-          legend = TRUE, title = 'net SCFA production, PCA comp 1 - 2')
-
-
-# Initial sPLS model
-# A basic sPLS model needs to be created such that it can be optimised and tuned.Note that as no keepX or keepY parameters are passed into the function, it is equivalent to the pls() function for now. The regression mode of sPLS is used as the gene expression data is being attempting to be used to explain the clinical data. 
-# spls <- spls(X = X, Y = Y, ncomp = 5, mode = 'regression')  
-
-
-# TUNING SPLS
-# Selecting number of components
-  ## repeated CV tuning of component count
- #  perf.spls <- perf(spls, validation = 'Mfold',
- #                           folds = 10, nrepeat = 5)
- #  
- # t <- plot(perf.spls, criterion = 'Q2.total')
-  
-# Selecting the number of variables 
-  ## set range of test values for number of variables to use from X dataframe
-  list.keepX <- c(seq(15, 35, 5))
-  ## set range of test values for number of variables to use from Y dataframe
-  list.keepY <- c(3:8) 
-  
-  
-  
-    df.select <- c(1:26, 28,30, 31,32, 33, 34,36,39,40)
-
-  
-  
-spls <- spls(X = subset(X, select = c(1:20, 22)), 
-             Y = Y, ncomp = 5, mode = 'regression'); perf.spls <- perf(spls, validation = 'Mfold',
-                            folds = 10, nrepeat = 5)
-
-
-  tune.spls <- tune.spls(subset(X, select = df.select), 
-                         Y, ncomp = 3, test.keepX = list.keepX,
-                                test.keepY = list.keepY,
-                                nrepeat = 1, folds = 10, # use 10 folds
-                                mode = 'regression', measure = 'cor') 
-# 1:26, 28,30, 31,32, 33, 34,36,39,40, 41, 42, 43,44,45
-
-  plot(tune.spls)         # use the correlation measure for tuning  
-  # The output of this tuning can be seen in Figure 4. For every grid value of keepX and keepY, the averaged correlation coefficients between the t and u components (latent variables) are shown across repeated cross validation folds. The value is depicted by circle size. Optimal values (here corresponding to the highest mean correlation) for each dimension and data set are indicated by the green square.
-
-  # The optimal number of features to use for both datasets can be extracted through the below calls.
-  tune.spls$choice.keepX
-  tune.spls$choice.keepY
-  
-  # extract optimal number of variables for X dataframe
-  optimal.keepX <- tune.spls$choice.keepX 
-  
-  # extract optimal number of variables for Y datafram
-  optimal.keepY <- tune.spls$choice.keepY
-  
-  optimal.ncomp <-  length(optimal.keepX) # extract optimal number of components
-
-# FINAL MODEL
-  # use all tuned values from above
-  final.spls.liver <- spls(data$genera, Y, ncomp = optimal.ncomp, 
-                      keepX = optimal.keepX,
-                      keepY = optimal.keepY,
-                      mode = "regression") # explanitory approach being used, 
-                                           # hence use regression mode
-  
- 
-```
-
-
-## Plot
-```{r fig.height=13, fig.width=13}
-plotIndiv(final.spls.liver, ind.names = FALSE, 
-         rep.space = "X-variate", # plot in X-variate subspace
-         group = sampledata$Transit, # colour by time group
-         pch = sampledata$Donor, 
-         col.per.group = color.mixo(1:3), 
-         legend = TRUE, legend.title = 'Transit', legend.title.pch = 'Donor')
-
-plotIndiv(final.spls.liver, ind.names = FALSE, 
-         rep.space = "Y-variate", # plot in X-variate subspace
-         group = sampledata$Transit, # colour by time group
-         pch = sampledata$Donor, 
-         col.per.group = color.mixo(1:3), 
-         legend = TRUE, legend.title = 'Transit', legend.title.pch = 'Donor')
-
-
-# colours
-ramp = colorRampPalette(c("green", "darkgreen", "black", "darkred", "red"))
-    ramp = ramp(101)
-    green = ramp[1:43]
-    red = ramp[59:101]
-    ramp = colorRamp(c(red, "black",green), space = "Lab")
-    
-    rgb(ramp(seq(0, 1, length = 50)), 
-        # alpha = 0, 
-        maxColorValue = 255)
-    
-
-color.edge <- color.GreenRed(50)  # set the colours of the connecting lines
-# color.edge <- color.jet(50)  # set the colours of the connecting lines
- 
-
-network <- network(final.spls.liver, comp = 1:2,
-        cutoff = 0.55, # only show connections with a correlation above 0.7
-        shape.node = c("rectangle", "circle"),
-        # color.node = c("cyan", "pink"),
-        color.node = c("orange","lightblue"),
-        show.edge.labels = T,
-        lwd.edge = c(3, 3),
-        cex.edge.label = 4,
-              # interactive = T,
-        color.edge = rgb(ramp(seq(0, 1, length = 50)), maxColorValue = 255),
-      layout.fun = layout_as_tree
-        )
-
-saveplots()
-network <- network(final.spls.liver, comp = 1:2,
-        cutoff = 0.55, # only show connections with a correlation above 0.7
-        shape.node = c("rectangle", "circle"),
-        # color.node = c("cyan", "pink"),
-        color.node = c("orange","lightblue"),
-        show.edge.labels = T,
-        lwd.edge = c(3, 3),
-        cex.edge.label = 4,
-              # interactive = T,
-        color.edge = rgb(ramp(seq(0, 1, length = 50)), maxColorValue = 255),
-      layout.fun = layout_as_tree,
-      save = 'tiff', # save as a png to the current working directory
-        name.save = 'sPLS_Network_Plot_DC'
-        )
-
-
-```
-
-play with igraph
-```{r fig.height=15, fig.width=15}
-
-network.res <- network(final.spls.liver)
-write.graph(network.res$gR, file = "network.gml", format = "gml")
-```
-
-
-
-
-
-
-
-
-play with igraph
-```{r fig.height=15, fig.width=15}
-
-network.res <- network(final.spls.liver)
-write.graph(network.res$gR, file = "network.gml", format = "gml")
-```
-
-
-
-
-# Mixomics - NGS and SCFA -rCCA
-## To begin
-```{r Starting with Mixomics, fig.height=10, fig.width=10}
-subsetcolon = T; subsetvessel = "P"
-otus <- F
-
-library(mixOmics) # import the mixOmics library
-library(igraph)
-# Check the dimensions. The distribution of class labels is also examined. Make sure that the rows are the same. Note that the dataframes in the data list should be named. 
-
-
-# Extract genus table from phylobj
-phylobj.QMP_stable <- subset_samples(phylobj.QMP, Ninetransit == 3)
-phylobj.QMP_stable <- subset_samples(phylobj.prop, Ninetransit == 3)
-
-topX_genera <- T
-if(topX_genera == T){
-phylobj.QMP_stable <- aggregate_top_taxa(phylobj.QMP_stable, top = 50, "Genus")}else{
-  phylobj.QMP_stable <- aggregate_taxa(phylobj.QMP_stable, "Genus")
-}
-# 
-# phylobj.QMP_stable <- subset_samples(phylobj.QMP.otu, Ninetransit == 3)
-# phylobj.QMP_stable <- subset_samples(phylobj.prop.otu, Ninetransit == 3)
-
-if(subsetcolon ==T){phylobj.QMP_stable <- subset_samples(phylobj.QMP_stable, PD_Colon == subsetvessel)}
-# 
-genus_table <- as.data.frame(t(otu_table(phylobj.QMP_stable)))
-
-
-
-
-if(otus ==T){
-  genusbu <- subset(genus_table, select = c("Otu00001"))
-  for(i in unique(colnames(genus_table))){
-  df <- subset(genus_table, select = c(i))
-
-  m =i
-  if(stringr::str_detect(m, "Otu0000")){
-      y <- str_replace(m, "Otu0000", "OTU")
-    }else{if(stringr::str_detect(m, "Otu000")){
-      y <- str_replace(m, "Otu000", "OTU")
-    }else{if(stringr::str_detect(m, "Otu00")){
-      y <- str_replace(m, "Otu00", "OTU")
-    }else{if(stringr::str_detect(m, "Otu0")){
-      y <- str_replace(m, "Otu0", "OTU")
-    }}}}
-
- colnames(df) <- c(y)
- genusbu <- cbind(genusbu, df)
-  }
-  genusbu <- subset(genusbu, select = -c(Otu00001))
-genus_table <- genusbu
-}
-
-
-
-# Extract sampleinfo from phyloseq object
-sampleinfo <- data.frame(sample_data(phylobj.QMP_stable))
-if(subsetcolon ==T){sampleinfo <- subset(sampleinfo, PD_Colon == subsetvessel)}
-# 
-
-
-
-# Extract VFA data and melt with sampleinfo
-SCFAdata <- read.csv2("netSCFAproduction.csv", sep = ",")
-if(subsetcolon ==T){SCFAdata <- subset(SCFAdata, Vessel == subsetvessel)}
-
-SCFAdata_table <- merge(sampleinfo, SCFAdata, by="Samplenumber")
-row.names(SCFAdata_table) <- SCFAdata_table$Samplenumber
-SCFAdata_table <- subset(SCFAdata_table, select = c("Acetate", "Propionate", "Isobutyrate", "Butyrate",
-                                                    "Isovalerate", "Valerate", "Isocaproate", "Caproate", "Heptanoate",
-                                                    "Octanoic.acid"))
-test <- data.frame(sampleinfo, x = sampleinfo$Samplenumber %in% SCFAdata$Samplenumber)
-test <- subset(test, x == F); warning(paste(test$Samplenumber, "is conflicting!"))
-
-
-# Extract SCFA relative to nutrient load
-SCFA_loaddata <- read.csv2("SCFA_load.csv", sep = ",")
-
-SCFAloaddata_table <- merge(sampleinfo, SCFA_loaddata, by="Samplenumber")
-row.names(SCFAloaddata_table) <- SCFAloaddata_table$Samplenumber
-SCFAloaddata_table <- subset(SCFAloaddata_table, select = c("Acet_load",   "Prop_load",    
-"Buty_load",     "Val_load",      "Cap_load"   ,   "Hep_load"  ,    "Oct_load" ,     "Isoval_load" ,  "Isobut_load"))
-test <- data.frame(sampleinfo, x = sampleinfo$Samplenumber %in% SCFA_loaddata$Samplenumber)
-test <- subset(test, x == F); warning(paste(test$Samplenumber, "is conflicting!"))
-
-# Extract cell count tables and melt with sampleinfo
-Countdata <- read.csv2("netcellrate.csv", sep = ",")
-sampleinfo2 <- subset(sampleinfo, select = c(Samplenumber, Donor, Transit, PD_Colon, Date, Ninetransit, Day))
-count_table <- merge(sampleinfo2, Countdata, by.x="Samplenumber", by.y = "Nr")
-row.names(count_table) <- count_table$Samplenumber
-count_table <- subset(count_table, select = c("meantot", "meanperc", "meanint"))
-test <- data.frame(sampleinfo, x = sampleinfo$Samplenumber %in% Countdata$Nr)
-test <- subset(test, x == F); warning(paste(test$Samplenumber, "is conflicting!"))
-
-# Remove sample 114, because its missing in the SCFA data
-genus_table <- rownames_to_column(genus_table)
-genus_table <- subset(genus_table, rowname!=114)
-row.names(genus_table) <- genus_table$rowname
-genus_table <- subset(genus_table, select = -c(rowname))
-sampleinfo <- subset(sampleinfo, Samplenumber !=114)
-
-SCFAloaddata_table <- rownames_to_column(SCFAloaddata_table)
-SCFAloaddata_table <- subset(SCFAloaddata_table,rowname!=114)
-
-count_table <- rownames_to_column(count_table)
-count_table <- subset(count_table, rowname!=114)
-row.names(count_table) <- count_table$rowname
-count_table <- subset(count_table, select = -c(rowname))
-
-
-SCFAdata_table <- merge(sampleinfo, SCFAdata, by="Samplenumber")
-row.names(SCFAdata_table) <- SCFAdata_table$Samplenumber
-SCFAdata_table <- subset(SCFAdata_table, select = c("Acetate", "Propionate", "Isobutyrate", "Butyrate",
-                                                    "Isovalerate", "Valerate", "Isocaproate", "Caproate", "Heptanoate",
-                                                    "Octanoic.acid"))
-
-
-SCFAloaddata_table <- merge(sampleinfo, SCFA_loaddata, by="Samplenumber")
-row.names(SCFAloaddata_table) <- SCFAloaddata_table$Samplenumber
-SCFAloaddata_table <- subset(SCFAloaddata_table, select = c("Acet_load",   "Prop_load",    
-"Buty_load",     "Val_load",      "Cap_load"   ,   "Hep_load"  ,    "Oct_load" ,     "Isoval_load" ,  "Isobut_load"))
-# Re-check row names
-row.names(sampleinfo) %in% row.names(genus_table)
-row.names(SCFAdata_table) %in% row.names(genus_table)
-row.names(SCFAdata_table) %in% row.names(sampleinfo)
-row.names(count_table) %in% row.names(sampleinfo)
-sampleinfo <- sampleinfo[order(as.numeric(row.names(sampleinfo))), ]
-SCFAdata_table <- SCFAdata_table[order(as.numeric(row.names(SCFAdata_table))), ]
-SCFAdata_table[] <- lapply(SCFAdata_table, as.numeric)
-
-SCFAloaddata_table <- SCFAloaddata_table[order(as.numeric(row.names(SCFAloaddata_table))), ]
-SCFAloaddata_table[] <- lapply(SCFAloaddata_table, as.numeric)
-
-genus_table <- genus_table[order(as.numeric(row.names(genus_table))), ]
-genus_table[] <- lapply(genus_table, as.numeric)
-count_table <- count_table[order(as.numeric(row.names(count_table))), ]
-count_table[] <- lapply(count_table, as.numeric)
-## set a list of all the X dataframes
-data = list(genera = genus_table, 
-            SCFA_load = SCFAloaddata_table,
-            SCFA = SCFAdata_table)
-test <- data.frame(genera = row.names(genus_table),
-                   SCFAload = row.names(SCFAloaddata_table),
-                   SCFA = row.names(SCFAdata_table))
-## Check their dimension
-lapply(data, dim) 
-
-## Set the response variable as the Y df
-Y = data.frame(Transit=sampleinfo$Transit, Donor = sampleinfo$Donor, PD_Colon = sampleinfo$PD_Colon, row = sampleinfo$Samplenumber)
-row.names(Y) = Y$row; Y = subset(Y, select = -c(row))
-Y = as.matrix(Y)
-Y = sampleinfo$Transit
-summary(Y)
-sampledata <- sampleinfo
-
-result.diablo.tcga <- block.plsda(data, Y) # run the method
-plotIndiv(result.diablo.tcga) # plot the samples
-plotVar(result.diablo.tcga) # plot the variables
-
-# 
-X <- data$genera
-Y <- data$SCFA
-# Y <- data$SCFA_load
-
-
-imgCor(X, Y, sideColors = c("purple", "green"))
-```
-
-
-## Tuning rCCA
-Both datasets should be explored prior to any form of analysis. This will aid in making decisions in constructing the best model possible. PCA is an unsupervised, exploratory method that is useful here. When using PCA on these datasets, both should be centered and scaled due to the varying scales of each variables (especially the Y dataframe). It is preferable to first run a PCA with a large number of components (i.e. ncomp = 10). Then, use the ‘elbow’ (a sudden drop) on the barplot to choose the final number of PCs. Further information can be found in the PCA Methods Page.
-```{r Initial Analysis - Pairwise PLS Comparisons, fig.height=10, fig.width=10}
-set.seed(0604)
-# Trim dataframes because:
-# Error: columns with zero variance in 'X': 1,3,5,7,25,35,46,47,48,51,65,80. Remove these columns before scaling.
-if(topX_genera == F){
-X <- subset(data$genera, select = -c(1,3,5,7,25,35,46,47,48,51,65,80))
-# X <- subset(X, select = -c(Other))
-}else{
-  X <- subset(data$genera, select = -c(5))
-  X <- subset(X, select = -c(Other))
-}
-# 
-# Error: columns with zero variance in 'X': 7,10. Remove these columns before scaling.
-Y <- subset(data$SCFA, select = -c(7,10))
-
-
-# set grid search values for each regularisation parameter
-grid1 <- seq(0.001, 0.2, length = 10) 
-grid2 <- seq(0.001, 0.2, length = 10)
-
-# optimise the regularisation parameter values
-cv.tune.rcc.nutrimouse <- tune.rcc(X, Y, grid1 = grid1, grid2 = grid2, 
-                                   validation = "loo") 
-  
-cv.tune.rcc.nutrimouse  
-
-
-opt.l1 <- cv.tune.rcc.nutrimouse$opt.lambda1 # extract the optimal lambda values
-opt.l2 <- cv.tune.rcc.nutrimouse$opt.lambda2
-
-# formed optimised CV rCCA
-CV.rcc.nutrimouse <- rcc(X, Y, method = "ridge", 
-                         lambda1 = opt.l1, lambda2 = opt.l2) 
-
-
-# run the rCCA method using shrinkage
-shrink.rcc.nutrimouse <- rcc(X,Y, method = 'shrinkage') 
-# examine the optimal lambda values after shrinkage 
-shrink.rcc.nutrimouse$lambda 
-
-
-# barplot of cross validation method rCCA canonical correlations
-plot(CV.rcc.nutrimouse, type = "barplot", main = "Cross Validation") 
-
-# barplot of shrinkage method rCCA canonical correlations
-plot(shrink.rcc.nutrimouse, type = "barplot", main = "Shrinkage") 
-```
-
-
-## Plot
-```{r fig.height=13, fig.width=13}
-network(CV.rcc.nutrimouse, comp = 1:2, interactive = FALSE,
-        lwd.edge = 3,
-        shape.node = c("rectangle", "circle"),
-        # color.node = c("cyan", "pink"),
-        color.node = c("orange","lightblue"),
-        show.edge.labels = T,
-        # lwd.edge = c(3, 3),
-        cex.edge.label = 4,
-              # interactive = T,
-        color.edge = rgb(ramp(seq(0, 1, length = 50)), maxColorValue = 255),
-      layout.fun = layout_as_tree,
-        cutoff = 0.55)
-
-network <- network(final.spls.liver, comp = 1:2,
-        cutoff = 0.55, # only show connections with a correlation above 0.7
-        shape.node = c("rectangle", "circle"),
-        # color.node = c("cyan", "pink"),
-        color.node = c("orange","lightblue"),
-        show.edge.labels = T,
-        lwd.edge = c(3, 3),
-        cex.edge.label = 4,
-              # interactive = T,
-        color.edge = rgb(ramp(seq(0, 1, length = 50)), maxColorValue = 255),
-      layout.fun = layout_as_tree,
-      save = 'tiff', # save as a png to the current working directory
-        name.save = 'sPLS_Network_Plot_DC'
-        )
-
-
-```
-
-play with igraph
-```{r fig.height=15, fig.width=15}
-
-network.res <- network(final.spls.liver)
-write.graph(network.res$gR, file = "network.gml", format = "gml")
-```
 
 
 
 
 # Operate from phyloseq objects
-## Heatmaps
-```{r Plot heatmap, fig.width=20, include=FALSE}
-# Manipulate dataframe for heatmaps
-df.heatmap <- aggregate_top_taxa(phylobj.prop, top= 15, "Genus")
-df.heatmap <- psmelt(df.heatmap)
-df.heatmap <- subset(df.heatmap, Ninetransit == 3)
-# df.heatmap$Nutrient_Load.Day <- factor(df.heatmap$Nutrient_Load.Day, ordered = TRUE)
-df.heatmap$Abundance <- as.numeric(df.heatmap$Abundance)
-# Create heatmaps between donors with as columns PD_Colons
-for (i in c("1", "2", "3", "4", "5", "6")){
-df.heatmap2 <- subset(df.heatmap, Donor == i)
-# df.heatmap3 <- subset(df.heatmap2, PD_Colon == "1")
-plot <- ggplot(df.heatmap2, aes(Transit, OTU)) +
-  geom_tile(aes(fill = Abundance),colour = "white") + 
-  scale_fill_gradient(low = "white",high = "steelblue") +
-  facet_grid(~PD_Colon, labeller = labeller(PD_Colon = PD_Colon.labsPC, Donor= donor.labs)) +
-  ggtitle(paste("Donor:", i)) 
-plot <- papertheme(plot, 20)
-plot <- plot + theme(strip.background =element_rect(fill="#D6E0F4"),
-        strip.text.x = element_text(size = 20),
-        strip.text.y = element_text(size = 20),
-        axis.text=element_text(size=15),
-        legend.text=element_text(size=15),
-        legend.title = element_text(size = 15, face= "bold"),
-        legend.title.align = 0.5,
-        legend.box.background = element_rect())
-print(plot)
-}
-f2 = colorRamp2(seq(min(0), max(100), length = 3), c("blue", "#EEEEEE", "red"), 
-    space = "RGB")
-# Create complex heatmaps
-for (i in c("1", "2", "3", "4", "5", "6")){
-df.heatmap2 <- subset(df.heatmap, Donor == i)
-for (j in c("P", "D")){
-df.heatmap3 <- subset(df.heatmap2, PD_Colon == j)
-df.heatmap3<-  acast(df.heatmap3, OTU~Nutrient_Load.Day, value.var="Abundance")
-plot <- Heatmap(df.heatmap3, cluster_columns = FALSE, col = f2, row_names_rot = 0, row_names_side = "left", name = "%", row_title = "OTU", column_title = "Days", row_dend_side = "right", column_title_side = "bottom") 
-print (plot)
-}}
-rm(df.heatmap, df.heatmap2, plot)
-library(vegan)
-data(varespec)
-pc <- rda(varespec)
-biplot(pc) # species scores as biplot arrows
-plot(envfit(pc ~ Pleuschr + Cladarbu + Cladrang + Cladstel, varespec))
-ordisurf(pc ~ Cladstel, varespec, knots = 1, add = TRUE)
-```
-
-## Faecal samples
+## Figure S1C - Faecal samples
 ```{r FS, fig.width=20, fig.height=10, include = FALSE}
-Top25 <- aggregate_top_taxa(phylobj.QMPFS, top= 15, "Genus")
-# Top25 <- aggregate_top_taxa(phylobj.QMPFS, top= 15, "Family")
-Top25 <- subset_samples(Top25, Donor == 3 & PD_Colon == "P")
-taxa_names(Top25)
-plot <- plot_bar(Top25, fill="Genus", x= "Ninetransit" 
+Top15 <- aggregate_top_taxa(phylobj.QMPFS, top= 15, "Genus")
+Top15 <- subset_samples(Top15, PD_Colon == "P")
+
+
+plot <- plot_bar(Top15, fill="Genus", x= "Ninetransit" 
                  # title="Absolute abundance top 15 genera"
                  )  
-# plot <- plot_bar(Top25, fill="Family", x= "Ninetransit" 
-#                  # title="Absolute abundance top 15 genera"
-#                  )  
+ 
 plot <- papertheme(plot)
 newtab = data.table(plot$data)
 newtab$Donor <- factor(newtab$Donor, levels = c(1,2,3,4,5,6))
 plot$data <- newtab
+
 plot1 <- plot + scale_shape_manual(values=c(15, 16)) +
   geom_bar(aes(color=Genus, fill=Genus), stat="identity", position="stack") +
   facet_grid(.~Donor, labeller = labeller(PD_Colon = PD_Colon.labsPC, Donor= donor.labs)) +
   scale_fill_manual(values = colorRampPalette(brewer.pal(16,"Set3"))(16)) +
   scale_color_manual(values = colorRampPalette(brewer.pal(16,"Set3"))(16)) +
-  # scale_fill_manual(values = desired) +
-  # scale_color_manual(values = desired) +
+
   labs(color = "Nutrient_Load", shape = "Phase", x = "", y =  expression(paste("Abundance (cells m", L^{"-1"},")"))) +
   guides(color = FALSE) +
-  # scale_x_discrete(labels = c("100","33","20","10")) +
-  # scale_y_continuous(labels=scaleFUN)+
-  # annotate("rect", xmin="0", xmax="5", ymin=-Inf, ymax=Inf, alpha=0.2, fill="#d18fa9") +
   theme(strip.background =element_rect(fill="#D6E0F4"),
         strip.text.x = element_text(size = 20),
         strip.text.y = element_text(size = 20),
@@ -2435,7 +1796,7 @@ plotA <- plot1
 
 phylobj.prop.3 = transform_sample_counts(phylobj.QMPFS, function(x) 100 * x/sum(x))
 Top25 <- aggregate_top_taxa(phylobj.prop.3, top= 15, "Genus")
-Top25 <- subset_samples(Top25, Donor == 3 & PD_Colon == "P")
+Top25 <- subset_samples(Top25, PD_Colon == "P")
 plot <- plot_bar(Top25, fill="Genus", x= "Ninetransit" 
                  # title="Absolute abundance top 15 genera"
                  )  
@@ -2448,13 +1809,8 @@ plot1 <- plot + scale_shape_manual(values=c(15, 16)) +
   facet_grid(.~Donor, labeller = labeller(PD_Colon = PD_Colon.labsPC, Donor= donor.labs)) +
   scale_fill_manual(values = colorRampPalette(brewer.pal(16,"Set3"))(16)) +
   scale_color_manual(values = colorRampPalette(brewer.pal(16,"Set3"))(16)) +
-  # scale_fill_manual(values = desired) +
-  # scale_color_manual(values = desired) +
   labs(color = "Nutrient_Load", shape = "Phase", x = "", y =  "Proportional abundance (%)") +
   guides(color = FALSE) +
-  # scale_x_discrete(labels = c("100","33","20","10")) +
-  # scale_y_continuous(labels=scaleFUN)+
-  # annotate("rect", xmin="0", xmax="5", ymin=-Inf, ymax=Inf, alpha=0.2, fill="#d18fa9") +
   theme(strip.background =element_rect(fill="#D6E0F4"),
         strip.text.x = element_text(size = 20),
         strip.text.y = element_text(size = 20),
@@ -2469,9 +1825,9 @@ print(plot1)
 
 
 
-ggarrange(plotA, plot1, ncol = 2, common.legend = T, legend = "bottom")
+plot <- ggarrange(plotA, plot1, ncol = 2, common.legend = T, legend = "bottom")
 
-
+ggsave(plot = plot , width = 20, height = 10, dpi = 300, filename = "Abundance_Faecal_samples.tiff")
 ```
 
 ## Percentage OTU per genus
@@ -2533,27 +1889,6 @@ combinedtable2$text <- paste0(combinedtable2$mean, " ± ", combinedtable2$SD)
 view(combinedtable2)
 combinedtable2 <- rownames_to_column(combinedtable2)
 ```
-
-## Species richness
-```{r Species richness}
-my_comparisons <- list(c("ST", "MT"), c("MT", "LT"), c("ST", "LT"))
-physeqobj.meta.s <- subset_samples(phylobj.agg, Ninetransit == 3)
-physeqobj.meta.s@sam_data$Transit <- factor(physeqobj.meta.s@sam_data$Transit,ordered=T,levels=c("ST","MT","LT"))
-physeqobj.meta.s@sam_data$PD_Colon <- factor(physeqobj.meta.s@sam_data$PD_Colon,ordered=T,levels=c("P","D"))
-test <- estimate_richness(physeqobj.meta.s, measures=c("Shannon", NULL));
-test <- rownames_to_column(test)
-test <- merge(test, sampledata, by.x="rowname", by.y = "Samplenumber",all.x=TRUE)
-plot <- papertheme(ggplot(test, aes(x = Transit, y = Shannon, color = Transit))+ geom_boxplot()+   facet_grid(PD_Colon ~ Donor, 
-      labeller = labeller(PD_Colon = PD_Colon.labsPC, Donor = donor.labs), scale = "free_x")) + scale_color_manual(values = transitcolors) + 
-  theme(strip.background = element_rect(fill = "#D6E0F4"), strip.text.x = element_text(size = 20),
-    strip.text.y = element_text(size = 20, angle = 270), axis.text.x = element_blank(),
-    axis.ticks.x = element_blank(), axis.title.x = element_blank(), legend.text = element_text(size = 15,
-        face = "italic"), legend.title = element_text(size = 15, face = "bold"),
-    legend.title.align = 0.5) + xlab("Transit time") +
-  stat_compare_means(comparisons = my_comparisons, label = "p.signif", hide.ns = T, hide.NS = T) # ; plot
-plot
-```
-
 
 # Operate from dataframe
 ## Graphs
@@ -2731,62 +2066,65 @@ rm(Top15, Top15f, Top15.mean.print, Top15.meanx, Top15.mean, Genus.labs, Genus2.
 
 ```
 
-### Figure3 - Paperplot mean per day
-#
-
+# Figure 4 - Paperplot mean per day
 ```{r Paperplot proportional abundance, fig.height=11, fig.width=17, include=TRUE}
 saveplots()
-# formatR::tidy_app()
-# Make a data frame with a column for the read counts of each sample
+
+# Prepare data for visualization
 phylobj.QMP_stable <- subset_samples(phylobj.QMP, Ninetransit == 3)
 Top15phylobj <- aggregate_top_taxa(phylobj.QMP_stable, top = 20, "Genus")
 Top15 <- psmelt(Top15phylobj)
-unique(Top15$OTU)
-unique(Top15$OTU) %in% Top15levels
-x <- data.frame(x = unique(Top15$OTU) %in% Top15levels, genus = unique(Top15$OTU)) #check if labelled
+
+# Check unique OTU values
+unique_otus <- unique(Top15$OTU)
+unique_otus_in_levels <- unique_otus %in% Top15levels
+
+# Create a data frame to check if OTUs are labeled
+x <- data.frame(x = unique_otus_in_levels, genus = unique_otus)
 x$genus <- as.ordered(factor(x$genus, levels = Top15levels))
 Top15$OTU <- as.ordered(factor(Top15$OTU, levels = Top15levels))
-sort(unique(x$genus))
-desired = c("Acidaminococcus"="#DA5724",  "Akkermansia"="#94cfd5", "Alistipes"="#3F4921",
-            "Bacteroides"="#DAA1AD", "Bifidobacterium"="#CBD588", "Bilophila"="#5F7FC7", 
-            # "Blautia"="#673770", "Eisenbergiella" = "#508578","Megasphaera"= "#6DDE88",
-            # "Roseburia"="#8A7C64", "Sutterella" = "#046582",
-            "Cloacibacillus" = "#D7C1B1", "Dialister"= "#FAFD7C","Enterobacteriaceae"="#38333E", 
-            "Clostridium_XlVa" = "#689030",  "Lachnospiraceae"="#CD9BCD",
-            "Megamonas" ="#D14285", "Mitsuokella" ="#652926", "Parabacteroides"="#fff8dc",
-            "Phascolarctobacterium"="#5E738F", "Prevotella"= "#C84248", "Pseudomonas"="#D1A33D", 
-            "Ruminococcus" = "#AD6F3B", "Ruminococcaceae" = "#CC0C00",  "Veillonella" = "#F8698C", 
-            "Other"="#bfbfbf")
-desired = c("Acidaminococcus"="#DA5724",  "Akkermansia"="#94cfd5", 
-            "Bacteroides"="#DAA1AD", "Bifidobacterium"="#CBD588", "Bilophila"="#5F7FC7", 
-            # "Blautia"="#673770", "Eisenbergiella" = "#508578","Megasphaera"= "#6DDE88",
-            # "Roseburia"="#8A7C64", "Sutterella" = "#046582",
-            "Cloacibacillus" = "#D7C1B1", "Dialister"= "#FAFD7C","Enterobacteriaceae"="#38333E", 
-            "Clostridium_XlVa" = "#689030",  "Lachnospiraceae"="#CD9BCD",
-            "Megamonas" ="#D14285", "Mitsuokella" ="#652926", "Parabacteroides"="#fff8dc",
-            "Prevotella"= "#C84248", "Pseudomonas"="#D1A33D", 
-            "Ruminococcus" = "#AD6F3B", "Veillonella" = "#F8698C", 
-            "Other"="#bfbfbf")
-# Add extra column days for graphs
+
+# Sort and define color scheme for visualization
+desired_colors <- c("Acidaminococcus"="#DA5724", "Akkermansia"="#94cfd5", 
+                    "Bacteroides"="#DAA1AD", "Bifidobacterium"="#CBD588", "Bilophila"="#5F7FC7", 
+                    # "Blautia"="#673770", "Eisenbergiella" = "#508578","Megasphaera"= "#6DDE88",
+                    # "Roseburia"="#8A7C64", "Sutterella" = "#046582",
+                    "Cloacibacillus" = "#D7C1B1", "Dialister"= "#FAFD7C", "Enterobacteriaceae"="#38333E", 
+                    "Clostridium_XlVa" = "#689030", "Lachnospiraceae"="#CD9BCD",
+                    "Megamonas" ="#D14285", "Mitsuokella" ="#652926", "Parabacteroides"="#fff8dc",
+                    "Prevotella"= "#C84248", "Pseudomonas"="#D1A33D", 
+                    "Ruminococcus" = "#AD6F3B", "Veillonella" = "#F8698C", 
+                    "Other"="#bfbfbf")
+
+
+# Rename dates and factorize columns
 Top <- rename_dates(Top15)
 Top$Transit <- as.ordered(factor(Top$Transit, levels = c("ST", "MT", "LT")))
 Top$PD_Colon <- as.ordered(factor(Top$PD_Colon, levels = c("P", "D", "FS")))
 Top$Donor <- as.ordered(factor(Top$Donor, levels = c("1", "2", "3", "4", "5", "6")))
 Top$Genus <- as.ordered(factor(Top$Genus, levels = Top15levels))
-plot <- ggplot(Top, aes(x = Day, y = Abundance, fill = Genus)) + geom_bar(position = "stack",
-    stat = "identity") + facet_grid(PD_Colon ~ Donor + Transit, labeller = labeller(PD_Colon = PD_Colon.labsPC,
-    Donor = donor.labs), scale = "free_x")
-plot <- papertheme(plot)
-plot <- plot + theme(strip.background = element_rect(fill = "#D6E0F4"), strip.text.x = element_text(size = 20),
-    strip.text.y = element_text(size = 20, angle = 270), axis.text.x = element_blank(),
-    axis.ticks.x = element_blank(), axis.title.x = element_blank(), legend.text = element_text(size = 15, hjust = 0 #,face = "italic"
-        ), legend.title = element_text(size = 15, face = "bold"), 
-    legend.title.align = 0.5) + xlab("Transit time") + 
-  ylab(expression(paste("Absolute abundance (cells m",L^{"-1"}, ")"))) + 
-  guides(fill = guide_legend("Genus", nrow = 3))
-# scale_fill_manual(values = desired) +
-plot <- plot + scale_fill_manual(values = desired,
-              labels = c(expression(italic("Acidaminococcus")),
+
+# Create a stacked bar plot
+plot <- ggplot(Top, aes(x = Day, y = Abundance, fill = Genus)) +
+  geom_bar(position = "stack", stat = "identity") +
+  facet_grid(PD_Colon ~ Donor + Transit, labeller = labeller(PD_Colon = PD_Colon.labsPC, Donor = donor.labs), scale = "free_x")
+
+# Apply theme and labels
+plot <- papertheme(plot) +
+  theme(strip.background = element_rect(fill = "#D6E0F4"),
+        strip.text.x = element_text(size = 20),
+        strip.text.y = element_text(size = 20, angle = 270),
+        axis.text.x = element_blank(),
+        axis.ticks.x = element_blank(),
+        axis.title.x = element_blank(),
+        legend.text = element_text(size = 15),
+        legend.title = element_text(size = 15, face = "bold"),
+        legend.title.align = 0.5) +
+  xlab("Transit time") +
+  ylab(expression(paste("Absolute abundance (cells m",L^{"-1"}, ")"))) +
+  guides(fill = guide_legend("Genus", nrow = 3)) +
+  scale_fill_manual(values = desired,
+                    labels = c(expression(italic("Acidaminococcus")),
                          expression(italic("Akkermansia")), 
                          expression(italic("Bacteroides")), 
                          expression(italic("Bifidobacterium")), 
@@ -2804,8 +2142,10 @@ plot <- plot + scale_fill_manual(values = desired,
                          expression(italic("Ruminococcus")), 
                          expression(italic("Veillonella")),
                          "Other")) 
-  
-plot <- Fusetoplayer(plot, Type = "DNA"); plot
+
+# Convert to DNA-style plot and return
+plot <- Fusetoplayer(plot, Type = "DNA")
+plot
 
 
 # Proportional
@@ -2850,6 +2190,7 @@ df1 <- subset(Top, Donor == 1 |Donor == 2); df1$intTransit <- "Short transit don
 df2 <- subset(Top, Donor == 3 |Donor == 4); df2$intTransit <- "Medium transit donor"
 df3 <- subset(Top, Donor == 5 |Donor == 6); df3$intTransit <- "Long transit donor"
 Top <- rbind(df1, df2,df3); rm(df1, df2, df3)
+
 Top$Transit <- as.ordered(factor(Top$Transit, levels = c("ST", "MT", "LT")))
 Top$PD_Colon <- as.ordered(factor(Top$PD_Colon, levels = c("P", "D", "FS")))
 Top$Donor <- as.ordered(factor(Top$Donor, levels = c("1", "2", "3", "4", "5", "6")))
@@ -2950,10 +2291,8 @@ pgNew
 
 plotFigure3 <- pgNew
 saveplots()
-ggsave(plot = plotFigure3 , width = 17, height = 11, dpi = 200, filename = "Figure3_lo_res.png")
-ggsave(plot = plotFigure3 , width = 17, height = 11, dpi = 400, filename = "Figure3_hi_res.tiff")
-
-
+ggsave(plot = plotFigure3 , width = 17, height = 11, dpi = 200, filename = "Figure4_lo_res.png")
+ggsave(plot = plotFigure3 , width = 17, height = 11, dpi = 400, filename = "Figure4_hi_res.tiff")
 ```
 
 
@@ -3274,208 +2613,11 @@ plot <- plot + theme(strip.background = element_rect(fill = "#D6E0F4"), strip.te
 # plot <- plot + scale_fill_manual(values = desired)
 plot <- plot + scale_fill_manual(values = getPalette(11))
 plot <- Fusetoplayer(plot, "DNA_FS"); plot
-
-
-
 ```
 
 
 
 
-### Washout faeces
-```{r}
-phylobj.QMP_stable <- subset_samples(phylobj.prop.otu, Ninetransit == 3 | Ninetransit == 0)
-# Top15phylobj <- aggregate_top_taxa(phylobj.QMP_stable, top = 17, "Genus")
-Top15 <- psmelt(phylobj.QMP_stable)
-Top15$comb <- paste0(Top15$OTU, Top15$Transit, Top15$PD_Colon)
-dfOTU <- data.frame()
-for(donor in c(1:6)){
-  print(message(paste("Donor ", donor)))
-df.1 <- subset(Top15, Donor ==donor)
-df.1 <- df.1 %>% group_by(comb) %>% summarise(Abundance = mean(Abundance), OTU = OTU, Transit = Transit, PD_Colon = PD_Colon, Donor = Donor)
-  df.1<- df.1[!duplicated(df.1),]
-  
-  number = 1
-  for(i in unique(df.1$OTU)){
-    df1 <- subset(df.1, OTU == i)
-    for(x in c(1:nrow(df1))){
-      df2 <- df1[x,]
-      if(df2$Abundance ==0){df2$Abundance <- 0}else{df2$Abundance <- 1}
-      dfOTU <- rbind(dfOTU, df2)
-      if(number%%500 == 0){message(paste(number, "of 3560 combinations done for donor ", donor))}
-      number = number +1
-    }
-  }
-}  
-
-```
-
-
-#### Plot as pie
-```{r fig.height=20, fig.width=20}
-desiredcolor <-  c("FS" = "#CDC774", "ST" = "#7ACD74", "MT"= "#757BCD","LT"= "#CD747A")
-plotsP <- list(); lop = 1; lod = 1; plotsD <- list()
-for(donors in c(1:6)){
-df <- subset(dfOTU, Donor == donors)
-dfFS <- subset(df, Transit == "FS")
-dfTransit <- subset(df, Transit != "FS")
-for(i in c("ST", "MT", "LT")){
-  df2 <- subset(dfTransit, Transit == i)
-  df3 <- rbind(dfFS, df2)
-  for(x in c("P", "D")){
-    df4 <- subset(df3, PD_Colon == x)
-    df4 <- df4 %>% group_by(Transit) %>% summarise(Abundance = sum(Abundance),
-                                                   # OTU = OTU, 
-                                                   Transit = Transit, PD_Colon = PD_Colon, Donor = Donor)
-  df4<- df4[!duplicated(df4),]
-  df6 <- data.frame()
- for(looper in c(1:nrow(df4))){
-   df5 <- df4[looper,]
-   num = df5$Abundance
-   df5$Abundance <- round(100*(num/sum(df4$Abundance)))
-   df6 <- rbind(df6, df5)
- }
-   plot <- ggplot(df6, aes(x="", y=Abundance, fill=Transit)) +
-      geom_bar(stat="identity", width=1) +
-     geom_text(aes(label = paste(Abundance, "%")),
-            position = position_stack(vjust = 0.5)) +
-      coord_polar("y", start=0) + ggtitle(paste(donors, i, x)) + scale_fill_manual(values = desiredcolor)
-   
-   
-   if(x == "P"){plotsP[[lop]] <- plot
-   lop = lop +1}else{plotsD[[lod]] <- plot
-   lod = lod +1}
-  }
-}
-}
-
-
-
-plots <- list(); lop = 1; lod = 1; plotsD <- list()
-for(donors in c(1:6)){
-df <- subset(dfOTU, Donor == donors)
-dfFS <- subset(df, Transit == "FS")
-dfTransit <- subset(df, Transit != "FS")
-
-  dfSF <- subset(dfTransit, Transit == "ST")
-  dfSF <- rbind(dfFS, dfSF)
-  dfMF <- subset(dfTransit, Transit == "MT")
-  dfMF <- rbind(dfFS, dfMF)
-  dfLF <- subset(dfTransit, Transit == "LT")
-  dfLF <- rbind(dfFS, dfLF)
-  
-  
-  for(x in c("P", "D")){
-  dfSF2 <- subset(dfSF, PD_Colon == x)
-  dfSF2 <- dfSF2 %>% group_by(Transit) %>% summarise(Abundance = sum(Abundance),
-                                                   # OTU = OTU, 
-                                                   Transit = Transit, PD_Colon = PD_Colon, Donor = Donor)
-  dfSF2<- dfSF2[!duplicated(dfSF2),]; dfSF2$int <- "SF"
-  
-  dfSF1 <- data.frame()
-  for(looper in c(1:nrow(dfSF2))){
-   df5 <- dfSF2[looper,]
-   num = df5$Abundance
-   df5$Abundance <- round(100*(num/sum(dfSF2$Abundance)))
-   dfSF1 <- rbind(dfSF1, df5)
-  }
-  dfSF2 <- dfSF1
-  
-  
-  dfMF2 <- subset(dfMF, PD_Colon == x)
-  dfMF2 <- dfMF2 %>% group_by(Transit) %>% summarise(Abundance = sum(Abundance),
-                                                   # OTU = OTU, 
-                                                   Transit = Transit, PD_Colon = PD_Colon, Donor = Donor)
-  dfMF2<- dfMF2[!duplicated(dfMF2),]; dfMF2$int <- "MF"
-  dfMF1 <- data.frame()
-  for(looper in c(1:nrow(dfMF2))){
-   df5 <- dfMF2[looper,]
-   num = df5$Abundance
-   df5$Abundance <- round(100*(num/sum(dfMF2$Abundance)))
-   dfMF1 <- rbind(dfMF1, df5)
-  }
-  dfMF2 <- dfMF1
-  
-  dfLF2 <- subset(dfLF, PD_Colon == x)
-  dfLF2 <- dfLF2 %>% group_by(Transit) %>% summarise(Abundance = sum(Abundance),
-                                                   # OTU = OTU, 
-                                                   Transit = Transit, PD_Colon = PD_Colon, Donor = Donor)
-  dfLF2<- dfLF2[!duplicated(dfLF2),]; dfLF2$int <- "LF"
-  dfLF1 <- data.frame()
-  for(looper in c(1:nrow(dfLF2))){
-   df5 <- dfLF2[looper,]
-   num = df5$Abundance
-   df5$Abundance <- round(100*(num/sum(dfLF2$Abundance)))
-   dfLF1 <- rbind(dfLF1, df5)
-  }
-  dfLF2 <- dfLF1
-  
-  if(x == "P"){dftotP <- rbind(dfSF2, dfMF2, dfLF2)}else{dftotD <- rbind(dfSF2, dfMF2, dfLF2)}
-  }
-  dftot <- rbind(dftotP, dftotD)
-  dftot$PD_Colon <- as.ordered(factor(dftot$PD_Colon, levels = c("P", "D")))
-  
-  ggplot(dftot, aes(x = int, y = Abundance, fill = Transit)) +
-  geom_col() +    coord_polar("y")
-
-   plot <- papertheme(ggplot(dftot, aes(x=int, y=Abundance, fill=Transit))) + facet_grid(PD_Colon~., labeller = labeller(PD_Colon = PD_Colon.labs))+ 
-     geom_col()+
-      # geom_bar(stat="identity", width=1) +
-     scale_x_discrete(limits = c(" ", "SF","MF","LF")) +
-     geom_text(aes(label = paste(Abundance, "%")),
-            position = position_stack(vjust = 0.5)) +
-      coord_polar("y") + 
-          ggtitle(paste("Donor", donors)) + scale_fill_manual(values = desiredcolor, labels = c("Faecal sample", "Short SHIME transit", "Medium SHIME transit", "Long SHIME transit"))+
-     theme(axis.text.x = element_blank(),
-            axis.title.y  = element_blank(),
-            axis.title.x = element_blank(),
-        axis.ticks.x = element_blank(),
-        axis.text.y = element_blank(),
-        axis.ticks.y = element_blank(),plot.title = element_text(hjust = 0.5),
-        panel.grid  = element_blank(), strip.background = element_rect(fill = "#D6E0F4"), strip.text.x = element_text(size = 20),
-    strip.text.y = element_text(size = 20, angle = 270))
-   
-   
-   plots[[donors]] <- plot
-   }
-
-
-ggarrange(plotlist = plots, common.legend = T)
-
-
-```
-
-
-#### Plot as Venn
-```{r fig.height=20, fig.width=20}
-library(ggvenn)
-
-plotsP <- list(); lop = 1; lod = 1; plotsD <- list()
-for(donors in c(1:6)){
-df <- subset(dfOTU, Donor == donors)
-df <- subset(df, Abundance != 0)
-
-for(x in c("P", "D")){
-  df1 <- subset(df, PD_Colon == x)
-dfFS <- subset(df1, Transit == "FS")$OTU
-dfST <- subset(df1, Transit == "ST")$OTU
-dfMT <- subset(df1, Transit == "MT")$OTU
-dfLT <- subset(df1, Transit == "LT")$OTU
-
-vennlist <- list(FS = dfFS, ST = dfST, MT = dfMT, LT = dfLT)
-names(vennlist) <- c("Faecal sample","Short transit","Medium transit", "Long transit")
-plot <- ggvenn(vennlist, fill_color = c("#CDC774", "#7ACD74", "#757BCD", "#CD747A"),
-  stroke_size = 0.5, set_name_size = 4) + ggtitle(donors)
-   if(x == "P"){plotsP[[lop]] <- plot
-   lop = lop +1}else{plotsD[[lod]] <- plot
-   lod = lod +1}
-}}
-
-ggarrange(plotlist = plotsP)
-ggarrange(plotlist = plotsD)
-ggarrange(plotlist = plots)
-
-```
 
 
 
@@ -3747,6 +2889,7 @@ plot <- plot + scale_fill_manual(values = extracolours)
 plot <- Fusetoplayer(plot, "DNA_FS"); plot
 
 ```
+ Checked until here
 
 ### Genera differences between transits with statistics - QMP and RMP
 ```{r Per genus and per donor, fig.height=20, fig.width=15}
@@ -4777,339 +3920,7 @@ plot <- papertheme(ggplot(dfcorall, aes(x = PD_Colon, y = genus, fill =cor))) + 
 plot
 ```
 
-
-
-
-
-
-### Paperplot main genera correlations of Top most abundant genera
-```{r Paperplot correlation colons split AND combined, fig.height=30, fig.width=30}
-# order <- c("Veillonella", 	"Sutterella", 	"Ruminococcus", 	"Ruminococcaceae", 	"Roseburia", 	"Pseudomonas", 	"Prevotella", 	"Phascolarctobacterium", 	"Parabacteroides", 	"Mitsuokella", 	"Megasphaera", 	"Megamonas", 	"Lachnospiraceae", 	"Fusobacterium", 	"Fusicatenibacter", 	"Faecalibacterium", 	"Erysipelotrichaceae", 	"Enterobacteriaceae", 	"Eisenbergiella", 	"Dorea", 	"Dialister", 	"Desulfovibrio", 	"Coprococcus", 	"Clostridium_XlVa", 	"Clostridiales", 	"Cloacibacillus", 	"Blautia", 	"Bilophila", 	"Bifidobacterium", 	"Bacteroides", 	"Bacteria", 	"Anaerostipes", 	"Anaeroglobus", 	"Alistipes", 	"Akkermansia", 	"Acidaminococcus")
-# df.OTU <-subset(df.combined, sum > 10)
-df.OTU <-subset(df.combined, mean > 5); x_lab = 12
-topnum <- 14
-# Retrieve top most abundant genera
-## Absolute
-phylobj.QMP_stable <- subset_samples(phylobj.QMP, Ninetransit == 3)
-Top15phylobj <- aggregate_taxa(phylobj.QMP_stable, level = "Genus")
-Top15phylobj <- aggregate_top_taxa(phylobj.QMP_stable, top = topnum, "Genus")
-## Proportional
-phylobj.prop_2 = transform_sample_counts(phylobj.QMP, function(x) 100 * x/sum(x))
-phylobj.prop_stable <- subset_samples(phylobj.prop_2, Ninetransit == 3)
-phylobj.prop_stable <- aggregate_top_taxa(phylobj.prop_stable, top = topnum, "Genus")
-## Take consensus top genera
-Top.genera <- rbind(subset(as.data.frame(phylobj.prop_stable@tax_table), Genus != "Other"), 
-                    subset(as.data.frame(Top15phylobj@tax_table), Genus != "Other"))
-## Remove unsignificant genera
-df <- data.frame()
-for(i in significantlist){
-  df2 <- subset(Top.genera, Genus == i)
-  df <- rbind(df, df2)
-}
-Top.genera <- unique(df$Genus)
-# Remove those that are not in the significant changes list (significantlist)
-Top.genera <- sort(Top.genera, decreasing = T)
-
-
-# GENUS LEVEL
-# Absolute
-phylobj.QMP_stable <- subset_samples(phylobj.QMP, Ninetransit == 3)
-Top15phylobj <- aggregate_taxa(phylobj.QMP_stable, level = "Genus")
-Top15 <- psmelt(Top15phylobj); unique(Top15$OTU); unique(Top15$OTU) %in% Top15levels
-## Subset according to top most abundant genera
-df.test <- data.frame();
-for(i in Top.genera){
-  df.test2 <- subset(Top15, Genus == i)
-  df.test <- rbind(df.test, df.test2)
-}
-Top15 <- df.test
-x <- data.frame(x = unique(Top15$OTU) %in% Top15levels, genus = unique(Top15$OTU))  #check if labelled
-Top15$OTU <- as.ordered(factor(Top15$OTU, levels = Top15levels))
-## Add extra column days for graphs
-Top <- Top15
-Top$Transit <- as.ordered(factor(Top$Transit, levels = c("ST", "MT", "LT")))
-Top$PD_Colon <- as.ordered(factor(Top$PD_Colon, levels = c("P", "D", "FS")))
-Top$Donor <- as.ordered(factor(Top$Donor, levels = c("1", "2", "3", "4", "5", "6")))
-Top$Genus <- as.ordered(factor(Top$Genus, levels = Top15levels))
-## Add numbers
-df.1 <- subset(Top, PD_Colon == "P" & Transit == "ST"); df.1$TT <- 8; df.1$TT1 <- 8
-df.2 <- subset(Top, PD_Colon == "P" & Transit == "MT"); df.2$TT <- 16; df.2$TT1 <- 16
-df.3 <- subset(Top, PD_Colon == "P" & Transit == "LT"); df.3$TT <- 24; df.3$TT1 <- 24
-df.4 <- subset(Top, PD_Colon == "D" & Transit == "ST"); df.4$TT <- 13; df.4$TT1 <- 8
-df.5 <- subset(Top, PD_Colon == "D" & Transit == "MT"); df.5$TT <- 26; df.5$TT1 <- 16
-df.6 <- subset(Top, PD_Colon == "D" & Transit == "LT"); df.6$TT <- 39; df.6$TT1 <- 24
-# df.4 <- subset(Top, PD_Colon == "D" & Transit == "ST"); df.4$TT <- 8
-# df.5 <- subset(Top, PD_Colon == "D" & Transit == "MT"); df.5$TT <- 16
-# df.6 <- subset(Top, PD_Colon == "D" & Transit == "LT"); df.6$TT <- 24
-
-Top <- rbind(df.1, df.2, df.3, df.4, df.5, df.6)
-rm(df.1, df.2, df.3, df.4, df.5, df.6)
-## Perform test
-dfcor <- data.frame(); df.otutest <- data.frame(); QMPlist <- list(); y =1
-for(i in na.omit(unique(Top$Genus))){
-  df1 <- subset(Top, Genus == i);  df1 <- subset(df1, Abundance > 0)
-  for(x in c("P", "D")){
-  df<- subset(df1, PD_Colon == x)
-  t <- cor(df$Abundance, df$TT, method = "spearman")
-  corr <- cor.test(df$Abundance, df$TT, method = 'spearman'); 
-  
-  if(is.na(corr[["p.value"]])){
-    sig <- "-"
-    }else{
-      if(corr[["p.value"]]<0.0001){
-        sig <- "****"
-        }else{
-          if(corr[["p.value"]]<0.001){
-            sig <- "***"
-            }else{
-              if(corr[["p.value"]]<0.01){
-                sig <- "**"
-                }else{
-                  if(corr[["p.value"]]<0.05){
-                    sig<-"*"
-                  }else{
-                      sig<-""}}}}}
-  
-  dfcor <- rbind(dfcor, data.frame(genus = i, cor = corr[["estimate"]][["rho"]], 
-             PD_Colon = x, pvalue = corr[["p.value"]], sig = sig, comm = "Quantitative microbial community"))
-  
-  if(x == "P"){corP <- paste0("ρ = ",round(t, digits = 2)," ", sig, sep = ""); corrP <- corr[["p.value"]]
-  }else{corD <- paste0("ρ = ",round(t, digits = 2)," ", sig, sep = ""); corrD <- corr[["p.value"]]}
-  }
-  
-  # dat_text <- data.frame(label = c(corP, corD),
-  # PD_Colon   = c("P","D"),
-  # value   = c(max(df1$Abundance), max(df1$Abundance)), 
-  # TT = c(8,8))
-
-  
-plot <- papertheme(ggplot(df1, aes(y = Abundance, x = TT1))) + geom_boxplot(aes(fill = Transit)) + geom_jitter(aes(color = Donor), size = 4) + 
-    facet_grid(rows = vars(PD_Colon), labeller = labeller(PD_Colon = PD_Colon.labs), scales = "free_x") 
-
-  if (corrP > 0.05 & corrD > 0.05) {
-    plot <- plot
-    dat_text <- data.frame(label = c("", ""), PD_Colon = c("P",
-        "D"), value = c(max(df1$Abundance), max(df1$Abundance)),
-        TT1 = c(x_lab, x_lab))
-} else {
-    if (corrP > 0.05 & corrD <= 0.05 ) {
-        plot <- plot + geom_smooth(data = subset(df1, PD_Colon =="D"), aes(y = Abundance, x = TT1), method = lm,
-                                   color = "black")
-        dat_text <- data.frame(label = c("", corD), PD_Colon = c("P",
-            "D"), value = c(max(df1$Abundance), max(df1$Abundance)),
-            TT1 = c(x_lab, x_lab))
-    } else {
-        if (corrP <= 0.05 & corrD > 0.05) {
-            plot <- plot + geom_smooth(data = subset(df1,  PD_Colon == "P"), aes(y = Abundance, x = TT1),
-                method = lm, color = "black")
-            dat_text <- data.frame(label = c(corP, ""),
-                PD_Colon = c("P", "D"), value = c(max(df1$Abundance),
-                  max(df1$Abundance)), TT1 = c(x_lab, x_lab))
-        } else {
-            plot <- plot + geom_smooth(aes(y = Abundance, x = TT1), method = lm, color = "black")
-            dat_text <- data.frame(label = c(corP, corD),
-                PD_Colon = c("P", "D"), value = c(max(df1$Abundance),
-                  max(df1$Abundance)), TT1 = c(x_lab, x_lab))
-        }
-    }
-}
-  dat_text$PD_Colon <- as.ordered(factor(dat_text$PD_Colon, levels = c("P", "D")))
-  
- plot <- plot + scale_color_manual(values = sixdonors) + scale_fill_manual("SHIME transit", labels = c("Short", "Medium", "Long"), values = transitcolors) +
-  scale_x_discrete(labels = c("Short", "Medium", "Long"))+
-  ylab(expression(paste("Absolute abundance (cells ",g^{"-1"},")")))+ xlab("Transit time")  
-   
-   if(i == "Akkermansia"){plot <- plot + theme(strip.background =element_rect(fill="#D6E0F4"),
-          legend.position = c(0.5, 0.8),
-          legend.direction = "vertical",
-          legend.box = "horizontal",
-          strip.text.x = element_text(size = 20),
-          strip.text.y = element_blank(),
-          legend.title = element_text(size=20), 
-          legend.spacing.x = unit(0.01, 'cm'),
-          legend.background = element_blank()) + 
-     guides(shape = guide_legend(ncol = 2, byrow = TRUE))}else{
-    plot <- plot + theme(strip.background =element_rect(fill="#D6E0F4"),
-          legend.position = "none",
-          strip.text.x = element_text(size = 20),
-          strip.text.y = element_blank(),
-          legend.title = element_text(size=20), legend.background = element_blank())} 
-  
-if(i == "X"){plot <- plot + geom_text(correlations)}else{
-  plot <- plot + geom_text(data= dat_text,  mapping = aes(x = as.numeric(TT1), y = as.numeric(value), label = label, family = 'sans'), size = 7)
-}
-QMPlist[[i]] <- plot; y = y+1
-  }
-
-
-
-
-# Proportional
-phylobj.prop_2 = transform_sample_counts(phylobj.QMP, function(x) 100 * x/sum(x))
-phylobj.prop_stable <- subset_samples(phylobj.prop_2, Ninetransit == 3)
-Top15phylobj.prop <- aggregate_taxa(phylobj.prop_stable, level = "Genus")
-Top15.prop <- psmelt(Top15phylobj.prop); unique(Top15.prop$OTU); unique(Top15.prop$OTU) %in% Top15levels
-## Subset according to top most abundant genera
-df.test <- data.frame();
-for(i in Top.genera){
-  df.test2 <- subset(Top15.prop, Genus == i)
-  df.test <- rbind(df.test, df.test2)
-}
-Top15.prop <- df.test
-x <- data.frame(x = unique(Top15$OTU) %in% Top15levels, genus = unique(Top15$OTU))  #check if labelled
-Top15$OTU <- as.ordered(factor(Top15$OTU, levels = Top15levels))
-x <- data.frame(x = unique(Top15.prop$OTU) %in% Top15levels, genus = unique(Top15.prop$OTU))  #check if labelled
-Top15.prop$OTU <- as.ordered(factor(Top15.prop$OTU, levels = Top15levels))
-## Add extra column days for graphs
-Top.prop <- Top15.prop
-Top.prop$Transit <- as.ordered(factor(Top.prop$Transit, levels = c("ST", "MT", "LT")))
-Top.prop$PD_Colon <- as.ordered(factor(Top.prop$PD_Colon, levels = c("P", "D", "FS")))
-Top.prop$Donor <- as.ordered(factor(Top.prop$Donor, levels = c("1", "2", "3", "4", "5", "6")))
-Top.prop$Genus <- as.ordered(factor(Top.prop$Genus, levels = Top15levels))
-## Add numbers
-df.1 <- subset(Top.prop, PD_Colon == "P" & Transit == "ST"); df.1$TT <- 8; df.1$TT1 <- 8
-df.2 <- subset(Top.prop, PD_Colon == "P" & Transit == "MT"); df.2$TT <- 16; df.2$TT1 <- 16
-df.3 <- subset(Top.prop, PD_Colon == "P" & Transit == "LT"); df.3$TT <- 24; df.3$TT1 <- 24
-df.4 <- subset(Top.prop, PD_Colon == "D" & Transit == "ST"); df.4$TT <- 13; df.4$TT1 <- 8
-df.5 <- subset(Top.prop, PD_Colon == "D" & Transit == "MT"); df.5$TT <- 26; df.5$TT1 <- 16
-df.6 <- subset(Top.prop, PD_Colon == "D" & Transit == "LT"); df.6$TT <- 39; df.6$TT1 <- 24
-# df.4 <- subset(Top.prop, PD_Colon == "D" & Transit == "ST"); df.4$TT <- 8
-# df.5 <- subset(Top.prop, PD_Colon == "D" & Transit == "MT"); df.5$TT <- 16
-# df.6 <- subset(Top.prop, PD_Colon == "D" & Transit == "LT"); df.6$TT <- 24
-Top.prop <- rbind(df.1, df.2, df.3, df.4, df.5, df.6)
-rm(df.1, df.2, df.3, df.4, df.5, df.6)
-dfcor2 <- data.frame(); PMPlist <- list(); y = 1
-
-for(i in na.omit(unique(Top.prop$Genus))){
-  df1 <- subset(Top.prop, Genus == i);  df1 <- subset(df1, Abundance > 0)
-  for(x in c("P", "D")){
-  df<- subset(df1, PD_Colon == x)
-  t <- cor(df$Abundance, df$TT, method = "spearman")
-  corr <- cor.test(df$Abundance, df$TT, method = 'spearman'); 
-  
-  if(is.na(corr[["p.value"]])){
-    sig <- "-"
-    }else{
-      if(corr[["p.value"]]<0.0001){
-        sig <- "****"
-        }else{
-          if(corr[["p.value"]]<0.001){
-            sig <- "***"
-            }else{
-              if(corr[["p.value"]]<0.01){
-                sig <- "**"
-                }else{
-                  if(corr[["p.value"]]<0.05){
-                    sig<-"*"
-                  }else{
-                      sig<-""}}}}}
-  
-  dfcor2 <- rbind(dfcor2, data.frame(genus = i, cor = corr[["estimate"]][["rho"]], 
-                 PD_Colon = x, pvalue = corr[["p.value"]], sig = sig, comm = "Proportional microbial community"))
-  
-  if(x == "P"){corP <- paste0("ρ = ",round(t, digits = 2)," ", sig, sep = ""); corrP <- corr[["p.value"]]}
-  if(x == "D"){corD <- paste0("ρ = ",round(t, digits = 2)," ", sig, sep = ""); corrD <- corr[["p.value"]]}
-  }
-  
-  #   dat_text <- data.frame(label = c(corP, corD),
-  # PD_Colon   = c("P","D"),
-  # value   = c(max(df1$Abundance), max(df1$Abundance)), 
-  # TT = c(8,8))
-  # dat_text$PD_Colon <- as.ordered(factor(dat_text$PD_Colon, levels = c("P", "D")))
-  
-plot <- papertheme(ggplot(df1, aes(y = Abundance, x = TT1))) + geom_boxplot(aes(fill = Transit)) + geom_jitter(aes(color = Donor), size =4) + 
-      facet_grid(rows = vars(PD_Colon), labeller = labeller(PD_Colon = PD_Colon.labs), scales = "free_x") 
-
-  if (corrP > 0.05 & corrD > 0.05) {
-    plot <- plot
-    dat_text <- data.frame(label = c("", ""), PD_Colon = c("P",
-        "D"), value = c(max(df1$Abundance), max(df1$Abundance)),
-        TT1 = c(x_lab, x_lab))
-} else {
-    if (corrP > 0.05 & corrD <= 0.05) {
-        plot <- plot + geom_smooth(data = subset(df1, PD_Colon =="D"), 
-                                   aes(y = Abundance, x = TT1), method = lm,
-                                   color = "black")
-        dat_text <- data.frame(label = c("", corD), PD_Colon = c("P",
-            "D"), value = c(max(df1$Abundance), max(df1$Abundance)),
-            TT1 = c(x_lab, x_lab))
-    } else {
-        if (corrP <= 0.05 & corrD > 0.05) {
-            plot <- plot + geom_smooth(data = subset(df1,
-                PD_Colon == "P"), aes(y = Abundance, x = TT1),
-                method = lm, color = "black")
-            dat_text <- data.frame(label = c(corP, ""),
-                PD_Colon = c("P", "D"), value = c(max(df1$Abundance),
-                  max(df1$Abundance)), TT1 = c(x_lab, x_lab))
-        } else {
-            plot <- plot + geom_smooth(aes(y = Abundance,
-                x = TT1), method = lm, color = "black")
-            dat_text <- data.frame(label = c(corP, corD),
-                PD_Colon = c("P", "D"), value = c(max(df1$Abundance),
-                  max(df1$Abundance)), TT1 = c(x_lab, x_lab))
-        }
-    }
-}
-  dat_text$PD_Colon <- as.ordered(factor(dat_text$PD_Colon, levels = c("P", "D")))
-
-plot <- plot + scale_color_manual(values = sixdonors) + scale_fill_manual(values = transitcolors) +
-  ylab("Proportional abundance (%)")+ xlab("Transit time") + 
-  scale_x_discrete(labels = c("Short", "Medium", "Long"))+
-    theme(strip.background =element_rect(fill="#D6E0F4"),
-          legend.position = "none",
-          legend.box = "horizontal",
-          strip.text.x = element_text(size = 20),
-          strip.text.y = element_text(size = 20, angle = 270),
-          legend.title = element_text(size=20), legend.background = element_blank()) 
-  
-if(i == "X"){plot <- plot + geom_text(correlations)}else{
-  plot <- plot + geom_text(data= dat_text,  mapping = aes(x = as.numeric(TT1), y = as.numeric(value), label = label, family = 'sans'), size = 7)
-}
-PMPlist[[i]] <- plot; y = y+1
-    }
-
-#Combine abs and prop abundances in one
-dfcor <- rbind(dfcor, dfcor2)
-dfcor <- na.omit(dfcor); dfcor$comm <- as.ordered(factor(dfcor$comm, 
-                              levels = c("Quantitative microbial community", "Proportional microbial community")))
-dfcor$PD_Colon <- as.ordered(factor(dfcor$PD_Colon, levels = c("P", "D")))
-dfcor$genus <- as.ordered(factor(dfcor$genus, levels = Top.genera))
-plot <- papertheme(ggplot(dfcor, aes(x = PD_Colon, y = genus, fill =cor))) + geom_tile() +
-  scale_fill_gradient2(na.value = "grey50",low="blue", high="red") + 
-  geom_text(aes(label = sig)) +
-  theme(axis.text.y = element_text(face="italic")) + ylab("Genus") + xlab("Colon vessel") + 
-  scale_x_discrete(breaks=c("P","D"), labels=c("Proximal colon", "Distal colon")) +
-  labs(fill = expression(rho)) +
-  facet_grid(cols = vars(comm)) +theme(strip.background = element_rect(fill = "#D6E0F4"))
-plot
-dfcorall <- dfcor
-
-
-
-
-# Combine plots
-plots <- list(); x = 1
-genera <- na.omit(unique(Top.prop$Genus))
-genera <- sort(genera, decreasing = F)
-for(i in genera){ 
-  plot1 <- QMPlist[[i]]; plot2 <- PMPlist[[i]]
-  plot <- ggarrange(plot1, plot2)
-  plot <- annotate_figure(plot, text_grob(i, color = "black", face = "italic", size = 25))
-  # print(plot)
-  plots[[x]] <- plot
-  x = x +1
-}
-
-plots1 <- plots[1:8]; plots2 <- plots[9:16]
-# ggarrange(plotlist = plots1, nrow = 2, ncol = 4)
-# ggarrange(plotlist = plots2, nrow = 2, ncol = 4)
-ggarrange(plotlist = plots, nrow = 5, ncol = 3)
-```
-
-
-
 # Paperplot main genera correlations and OTU of Top most abundant genera
-
 ## Top30 generas without OTUs
 ```{r Paperplot correlation colons split AND combined, fig.height=42, fig.width=40}
 PD_Colon.labs <- c("Faecal sample","Prox colon", "Dist colon")
@@ -5330,7 +4141,7 @@ plot <- papertheme(ggplot(df1, aes(y = Abundance, x = TT1))) + geom_boxplot(aes(
      pwc <- subset(df1, PD_Colon == vessels) %>%  
        wilcox_test(Abundance ~ Transit, 
                    p.adjust.method = "holm", paired = F)
-    pwc <- subset(pwc, p.adj.signif != "ns")
+    # pwc <- subset(pwc, p.adj.signif != "ns")
     pwc$Genus <- i; pwc$Vessel <- vessels; pwc$abundance <- "ABS"
     pwc$maxST <- max(subset(test, Transit =="ST")$Abundance) 
     pwc$maxMT <- max(subset(test, Transit =="MT")$Abundance)
@@ -5355,7 +4166,7 @@ plot <- papertheme(ggplot(df1, aes(y = Abundance, x = TT1))) + geom_boxplot(aes(
      df.res.kruskal.all <- rbind(df.res.kruskal.all, res.kruskal22)
     pwc <- subset(df1, PD_Colon == vessels) %>%  wilcox_test(Abundance ~ Transit, p.adjust.method = "holm", paired = F)
  
-    pwc <- subset(pwc, p.adj.signif != "ns")
+    # pwc <- subset(pwc, p.adj.signif != "ns")
     pwc$Genus <- i; pwc$Vessel <- vessels; pwc$abundance <- "ABS"
     pwc$maxST <- max(subset(test, Transit =="ST")$Abundance)
     pwc$maxMT <- max(subset(test, Transit =="MT")$Abundance)
@@ -5578,7 +4389,7 @@ PMPlist[[i]] <- plot
      df.res.kruskal.all <- rbind(df.res.kruskal.all, res.kruskal22)
     pwc <- subset(df1, PD_Colon == vessels) %>%  wilcox_test(Abundance ~ Transit, p.adjust.method = "holm", paired = F)
  
-    pwc <- subset(pwc, p.adj.signif != "ns")
+    # pwc <- subset(pwc, p.adj.signif != "ns")
     pwc$Genus <- i; pwc$Vessel <- vessels; pwc$abundance <- "PROP"
     pwc$maxST <- max(subset(test, Transit =="ST")$Abundance); pwc$maxMT <- max(subset(test, Transit =="MT")$Abundance)
     pwc$maxLT <- max(subset(test, Transit =="LT")$Abundance) ; df.pwc <- rbind(df.pwc, pwc)
@@ -5601,7 +4412,7 @@ PMPlist[[i]] <- plot
      df.res.kruskal.all <- rbind(df.res.kruskal.all, res.kruskal22)
     pwc <- subset(df1, PD_Colon == vessels) %>%  wilcox_test(Abundance ~ Transit, p.adjust.method = "holm", paired = F)
  
-    pwc <- subset(pwc, p.adj.signif != "ns")
+    # pwc <- subset(pwc, p.adj.signif != "ns")
     pwc$Genus <- i; pwc$Vessel <- vessels; pwc$abundance <- "PROP"
     pwc$maxST <- max(subset(test, Transit =="ST")$Abundance); pwc$maxMT <- max(subset(test, Transit =="MT")$Abundance)
     pwc$maxLT <- max(subset(test, Transit =="LT")$Abundance)
@@ -5906,8 +4717,8 @@ if(BW == TRUE){plot <- plot + scale_fill_grey(name = "SHIME transit", start = 0.
       p.adj.signif = "ns")
     }
  
-    pwc <- subset(pwc, p.adj.signif != "ns")
-    if(nrow(pwc)>0){
+    # pwc <- subset(pwc, p.adj.signif != "ns")
+    if(nrow(subset(pwc, p.adj.signif != "ns"))>0){
     pwc$Genus <- i; pwc$Vessel <- vessels; pwc$abundance <- "ABS"; df.pwc.otu <- rbind(df.pwc.otu, pwc)
     # print(pwc) # print pairwise comparisons
     
@@ -5920,7 +4731,8 @@ if(BW == TRUE){plot <- plot + scale_fill_grey(name = "SHIME transit", start = 0.
     caption = get_pwc_label(pwc))
     }else{
       plot64 <- ggboxplot(subset(df1, PD_Colon == vessels), x = "Transit", y = "Abundance") +
-      labs(title = paste0("OTU ",i,", Vessel ",vessels))}
+      labs(title = paste0("OTU ",i,", Vessel ",vessels))
+      }
     
     
     vessels = "D"
@@ -5944,9 +4756,9 @@ if(BW == TRUE){plot <- plot + scale_fill_grey(name = "SHIME transit", start = 0.
       p.adj.signif = "ns")
     }
  
-    pwc <- subset(pwc, p.adj.signif != "ns")
+    # pwc <- subset(pwc, p.adj.signif != "ns")
     
-    if(nrow(pwc)>0){
+    if(nrow(subset(pwc, p.adj.signif != "ns"))>0){
     pwc$Genus <- i; pwc$Vessel <- vessels; pwc$abundance <- "ABS"; df.pwc.otu <- rbind(df.pwc.otu, pwc)
     # print(pwc) # print pairwise comparisons
     
@@ -6204,8 +5016,8 @@ if(i == "Otu00018" | i == "Otu00150" | i == "Otu00377"| i == "Otu00048" |  i == 
       p.adj.signif = "ns")
     }
  
-    pwc <- subset(pwc, p.adj.signif != "ns")
-    if(nrow(pwc)>0){
+    # pwc <- subset(pwc, p.adj.signif != "ns")
+    if(nrow(subset(pwc, p.adj.signif != "ns"))>0){
     pwc$Genus <- i; pwc$Vessel <- vessels; pwc$abundance <- "PROP"; df.pwc.otu <- rbind(df.pwc.otu, pwc)
     # print(pwc) # print pairwise comparisons
     
@@ -6243,8 +5055,8 @@ if(i == "Otu00018" | i == "Otu00150" | i == "Otu00377"| i == "Otu00048" |  i == 
       p.adj.signif = "ns")
     }
  
-    pwc <- subset(pwc, p.adj.signif != "ns")
-    if(nrow(pwc)>0){
+    # pwc <- subset(pwc, p.adj.signif != "ns")
+    if(nrow(subset(pwc, p.adj.signif != "ns"))>0){
     pwc$Genus <- i; pwc$Vessel <- vessels; pwc$abundance <- "PROP"; df.pwc.otu <- rbind(df.pwc.otu, pwc)
     # print(pwc) # print pairwise comparisons
     
@@ -6416,6 +5228,152 @@ PD_Colon.labs <- c("Faecal sample","Proximal colon", "Distal colon")
 names(PD_Colon.labs) <- c("FS","P", "D")
 ```
 
+
+## BH corrected
+```{r}
+df.res.kruskal.adj <- data.frame()
+
+# kruskal tests
+for(i in c("P", "D")){
+  for(x in c("ABS", "PROP")){
+  test <- subset(df.res.kruskal.all, vessel ==i); test <- subset(test, Abundance ==x)
+  test <- test[grep("Otu0", test$Genus), ]
+  test$p.adj <- p.adjust(as.numeric(test$p), method = "BH")
+  
+  df.res.kruskal.adj <- rbind(df.res.kruskal.adj, test)
+  
+  test <- subset(df.res.kruskal.all, vessel ==i); test <- subset(test, Abundance ==x)
+  test <- test[!grepl("Otu", test$Genus),]
+  test$p.adj <- p.adjust(as.numeric(test$p), method = "BH")
+  df.res.kruskal.adj <- rbind(df.res.kruskal.adj, test)
+  }
+}
+
+df.res.kruskal.adj$difference.p <- abs(df.res.kruskal.adj$p - df.res.kruskal.adj$p.adj)
+
+test <- subset(df.res.kruskal.adj, p.adj < 0.05 & p < 0.05);test$different_result <- "no_different_outcome"
+test2 <- subset(df.res.kruskal.adj, p.adj > 0.05 & p > 0.05); test2$different_result <- "no_different_outcome"
+test3 <- subset(df.res.kruskal.adj, p.adj < 0.05 & p > 0.05); test3$different_result <- "different_outcome"
+test4 <- subset(df.res.kruskal.adj, p.adj > 0.05 & p < 0.05); test4$different_result <- "different_outcome"
+nrow(df.res.kruskal.adj)
+nrow(test) + nrow(test2) +nrow(test3) + nrow(test4)
+
+df.res.kruskal.adj <- rbind(test, test2, test3, test4)
+df.res.kruskal.adj <- select(df.res.kruskal.adj, .y., n, df, p, p.adj, difference.p, different_result, method, vessel, Genus, Abundance )
+write.csv2(df.res.kruskal.adj, "statistics_Kruskal_adjustment_BH.csv", row.names=FALSE, dec = ",", sep = ";")
+
+
+# Genera
+df.pwc.adj <- df.pwc 
+df.pwc.adj2 <- data.frame()
+for(i in c("P", "D")){
+  for(x in c("ABS", "PROP")){
+  test <- subset(df.pwc.adj, Vessel ==i); test <- subset(test, abundance ==x)
+  testSTMT <- subset(test, group1 =="ST"); testSTMT  <- subset(testSTMT, group2 =="MT")
+  testSTMT$p.adj.adj <- p.adjust(as.numeric(testSTMT$p.adj), method = "BH")
+  
+  
+  testSTLT <- subset(test, group1 =="ST"); testSTLT <- subset(testSTLT, group2 =="LT")
+  testSTLT$p.adj.adj <- p.adjust(as.numeric(testSTLT$p.adj), method = "BH")
+  
+  testMTLT <- subset(test, group1 =="MT"); testMTLT <- subset(testMTLT, group2 =="LT")
+  testMTLT$p.adj.adj <- p.adjust(as.numeric(testMTLT$p.adj), method = "BH")
+  
+  df.pwc.adj2 <- rbind(df.pwc.adj2, testSTMT, testSTLT, testMTLT)
+  }
+}
+df.pwc.adj <- df.pwc.adj2
+
+df.pwc.adj$difference.p <- abs(df.pwc.adj$p.adj - df.pwc.adj$p.adj.adj)
+
+test <- subset(df.pwc.adj, p.adj < 0.05 & p.adj.adj < 0.05);test$different_result <- "no_different_outcome"
+test2 <- subset(df.pwc.adj, p.adj > 0.05 & p.adj.adj > 0.05); test2$different_result <- "no_different_outcome"
+test3 <- subset(df.pwc.adj, p.adj < 0.05 & p.adj.adj > 0.05); test3$different_result <- "different_outcome"
+test4 <- subset(df.pwc.adj, p.adj > 0.05 & p.adj.adj < 0.05); test4$different_result <- "different_outcome"
+nrow(df.pwc.adj)
+nrow(test) + nrow(test2) +nrow(test3) + nrow(test4)
+
+df.pwc.adj <- rbind(test, test2, test3, test4)
+df.pwc.adj <- select(df.pwc.adj, .y., group1, group2, n1, n2, statistic, p, p.adj, p.adj.adj, difference.p, different_result, p.adj.signif, Genus, Vessel, abundance, maxST, maxMT, maxLT)
+
+write.csv2(df.pwc.adj, "statistics_Wilcoxon_Genera_BH.csv", row.names=FALSE, dec = ",", sep = ";")
+# df.pwc.adj$p.adj.adj <- p.adjust(as.numeric(df.pwc.adj$p.adj), method = "BH")
+
+
+
+# OTUs
+df.pwc.adj <- df.pwc.otu
+df.pwc.adj2 <- data.frame()
+for(i in c("P", "D")){
+  for(x in c("ABS", "PROP")){
+  test <- subset(df.pwc.adj, Vessel ==i); test <- subset(test, abundance ==x)
+  testSTMT <- subset(test, group1 =="ST"); testSTMT  <- subset(testSTMT, group2 =="MT")
+  testSTMT$p.adj.adj <- p.adjust(as.numeric(testSTMT$p.adj), method = "BH")
+  
+  
+  testSTLT <- subset(test, group1 =="ST"); testSTLT <- subset(testSTLT, group2 =="LT")
+  testSTLT$p.adj.adj <- p.adjust(as.numeric(testSTLT$p.adj), method = "BH")
+  
+  testMTLT <- subset(test, group1 =="MT"); testMTLT <- subset(testMTLT, group2 =="LT")
+  testMTLT$p.adj.adj <- p.adjust(as.numeric(testMTLT$p.adj), method = "BH")
+  
+  df.pwc.adj2 <- rbind(df.pwc.adj2, testSTMT, testSTLT, testMTLT)
+  }
+}
+df.pwc.adj <- df.pwc.adj2
+
+df.pwc.adj$difference.p <- abs(df.pwc.adj$p.adj - df.pwc.adj$p.adj.adj)
+
+test <- subset(df.pwc.adj, p.adj < 0.05 & p.adj.adj < 0.05);test$different_result <- "no_different_outcome"
+test2 <- subset(df.pwc.adj, p.adj > 0.05 & p.adj.adj > 0.05); test2$different_result <- "no_different_outcome"
+test3 <- subset(df.pwc.adj, p.adj < 0.05 & p.adj.adj > 0.05); test3$different_result <- "different_outcome"
+test4 <- subset(df.pwc.adj, p.adj > 0.05 & p.adj.adj < 0.05); test4$different_result <- "different_outcome"
+nrow(df.pwc.adj)
+nrow(test) + nrow(test2) +nrow(test3) + nrow(test4)
+
+df.pwc.adj <- rbind(test, test2, test3, test4)
+df.pwc.adj <- select(df.pwc.adj, .y., group1, group2, n1, n2, statistic, p, p.adj, p.adj.adj, difference.p, different_result, p.adj.signif, Genus, Vessel, abundance)
+
+write.csv2(df.pwc.adj, "statistics_Wilcoxon_OTUs_BH.csv", row.names=FALSE,  sep = ";", dec = ",")
+
+
+
+
+# correlations
+dfcor.adj <- data.frame()
+for(i in c("P", "D")){
+  for(x in c("Quantitative microbial community", "Proportional microbial community")){
+  test <- subset(dfcor, PD_Colon ==i); test <- subset(test, comm ==x)
+  
+  test$p.adj <- p.adjust(as.numeric(test$pvalue), method = "BH")
+  test$p <- test$pvalue
+  
+  dfcor.adj <- rbind(dfcor.adj, test)
+  
+  }
+}
+
+dfcor.adj$difference.p <- abs(dfcor.adj$p - dfcor.adj$p.adj)
+
+test <- subset(dfcor.adj, p.adj < 0.05 & p < 0.05);test$different_result <- "no_different_outcome"
+test2 <- subset(dfcor.adj, p.adj > 0.05 & p > 0.05); test2$different_result <- "no_different_outcome"
+# test3 <- subset(dfcor.adj, p.adj < 0.05 & p > 0.05); test3$different_result <- "different_outcome"
+test4 <- subset(dfcor.adj, p.adj > 0.05 & p < 0.05); test4$different_result <- "different_outcome"
+nrow(dfcor.adj)
+nrow(test) + nrow(test2) + nrow(test4)
+
+dfcor.adj <- rbind(test, test2, test4)
+dfcor.adj <- select(dfcor.adj, genus,cor,PD_Colon,p,p.adj,difference.p, different_result, sig, comm)
+write.csv2(dfcor.adj, "statistics_Correlations_adjustment_BH.csv", row.names=FALSE, dec = ",", sep = ";")
+
+
+
+dfcor
+
+```
+
+
+
 #### Plot it
 ```{r Paperplot correlation colons split AND combined, fig.height=25, fig.width=25}
 replacelegend <- function(ggplotobject){
@@ -6485,6 +5443,13 @@ ggsave(plot = plot10, width = 40, height = 40, dpi = 300, filename = "FigureS8_1
       
 
 ```
+
+
+
+
+
+
+
 
 # Figure S10
 #### Plot it - condensed
