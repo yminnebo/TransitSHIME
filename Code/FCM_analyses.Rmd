@@ -1822,139 +1822,205 @@ ggarrange(paperplot_carbohydrateconsumptionA, ggarrange(NULL,paperplot_carbohydr
 # Statistics
 ## Statistical data analysis - parametric
 ```{r two-way ANOVA, fig.height=18, fig.width=18}
-my_data <- subset(df.counts, Vessel == "P"); my_data <- subset(my_data, Ninetransit == 3)
-my_data$Donor <- as.ordered(factor(my_data$Donor,levels=c(1,2,3,4,5,6)))
-# Show a random sample
+# Filter the data and set Donor as an ordered factor
+my_data <- subset(df.counts, Vessel == "P")
+my_data <- subset(my_data, Ninetransit == 3)
+my_data$Donor <- as.ordered(factor(my_data$Donor, levels = c(1, 2, 3, 4, 5, 6)))
+
+# Display a random sample from the data
 set.seed(1234)
 dplyr::sample_n(my_data, 10)
-# Check the structure
+
+# Check the structure of the dataset
 str(my_data)
-# Generate frequency tables
+
+# Generate frequency tables for Donor and Transit
 table(my_data$Donor, my_data$Transit)
-# Visualization
+
+# Visualize the data using boxplots
 ggboxplot(my_data, x = "Donor", y = "TotalpermL", color = "Transit",
           palette = transitcolors)
+
+# Add mean and dotplot to the boxplot
 ggline(my_data, x = "Donor", y = "TotalpermL", color = "Transit",
        add = c("mean_se", "dotplot"),
        palette = transitcolors)
-# Two-way interaction plot
+
+# Create a two-way interaction plot
 interaction.plot(x.factor = my_data$Donor, trace.factor = my_data$Transit, 
                  response = my_data$TotalpermL, fun = mean, 
                  type = "b", legend = TRUE, 
-                 xlab = "Donor", ylab="TotalpermL",
-                 pch=c(1,19), col = transitcolors)
-# Compute 2 way ANOVA
+                 xlab = "Donor", ylab = "TotalpermL",
+                 pch = c(1, 19), col = transitcolors)
+
+# Perform a two-way ANOVA
 res.aov2 <- aov(TotalpermL ~ Transit + Donor, data = my_data)
 summary(res.aov2)
-# Two-way ANOVA with interaction effect
-# These two calls are equivalent
+
+# Perform a two-way ANOVA with interaction effect
 res.aov3 <- aov(TotalpermL ~ Transit * Donor, data = my_data)
 summary(res.aov3)
-# Post-hoc: Tukey multiple pairwise-comparisons
+
+# Perform post-hoc Tukey multiple pairwise-comparisons for Donor and Transit
 TukeyHSD(res.aov3, which = "Donor")
 TukeyHSD(res.aov3, which = "Transit")
-# Assumptions
-# 1. Homogeneity of variances
+
+# Check assumptions:
+# 1. Homogeneity of variances - Levene's test
 plot(res.aov3, 1)
-## Levene's test, p has to be LARGER than 0.05!
 car::leveneTest(TotalpermL ~ Transit * Donor, data = my_data)
-# 2. Normality, all the points have to fall approximately along this reference line to assume normality
+
+# 2. Normality - Shapiro-Wilk test for residuals
 plot(res.aov3, 2)
-## Extract the residuals
 aov_residuals <- residuals(object = res.aov3)
-## Run Shapiro-Wilk test, H0: a variable is normally distributed in some population. Reject the null hypothesis if p < 0.05
-t <- shapiro.test(x = aov_residuals); if(t[["p.value"]]<0.05){
-  message(crayon::red(paste0("p=", t[["p.value"]],", Data is not normally distributed!")))} else{
-    message(crayon::green("Data is normally distributed"))}
+t <- shapiro.test(x = aov_residuals)
+if (t[["p.value"]] < 0.05) {
+  message(crayon::red(paste0("p=", t[["p.value"]], ", Data is not normally distributed!")))
+} else {
+  message(crayon::green("Data is normally distributed"))
+}
 ```
 
 ## Statistical data analysis - non parametric
 ```{r Kruskal-Wallis, fig.height=18, fig.width=18}
+
 # Non parametric to 1-way ANOVA, alternative - Kruskal-Wallis
+# Set the correction method for p-values
 correction <- "holm"
-# Between transits
-gglist <- list(); x = 1; df.pwc <- data.frame()
-message(paste("Kruskal-Wallis tests with ",correction," correction between transit times"))
+
+# Initialize variables for plotting and storing results
+gglist <- list()
+x <- 1
+df.pwc <- data.frame()
+
+# Perform Kruskal-Wallis tests for different vessels and donors
 for (i in c("P", "D")) {
-  my_data <- subset(df.counts, Vessel == i); my_data <- subset(my_data, Ninetransit == 3)
-  if(i == "P"){i = "Proximal colon"}; if(i == "D"){i = "Distal colon"}
-  for (j in c(1,2,3,4,5,6)) {
+  my_data <- subset(df.counts, Vessel == i)
+  my_data <- subset(my_data, Ninetransit == 3)
+  
+  # Update the vessel label for readability
+  if (i == "P") { i_label <- "Proximal colon" }
+  if (i == "D") { i_label <- "Distal colon" }
+  
+  for (j in c(1, 2, 3, 4, 5, 6)) {
+    # Subset data for the specific donor
     my_data2 <- subset(my_data, Donor == j)
+    
+    # Perform Kruskal-Wallis test
     res.kruskal <- my_data2 %>% rstatix::kruskal_test(TotalpermL ~ Transit)
     
-    # Effect size The interpretation values commonly in published literature are: 
-    # 0.01- < 0.06 (small effect), 0.06 - < 0.14 (moderate    effect) and >= 0.14 (large effect).
+    # Calculate effect size
     effsize <- my_data2 %>% kruskal_effsize(TotalpermL ~ Transit)
-    if(effsize$effsize>0.13){
-      effsize <- paste0(", effsize= ", signif(effsize$effsize, digits = 5)," (large effect size is detected)")
-    }else{if(effsize$effsize>0.06){
-      effsize <- paste0(", effsize= ", signif(effsize$effsize, digits = 5)," (moderate effect size is detected)")
-    }else{effsize <- paste0(", effsize= ", signif(effsize$effsize, digits = 5)," (WARNING: low effect size is detected)")}}
+    if (effsize$effsize > 0.13) {
+      effsize_label <- paste0(", effect size = ", signif(effsize$effsize, digits = 5), " (large effect)")
+    } else {
+      if (effsize$effsize > 0.06) {
+        effsize_label <- paste0(", effect size = ", signif(effsize$effsize, digits = 5), " (moderate effect)")
+      } else {
+        effsize_label <- paste0(", effect size = ", signif(effsize$effsize, digits = 5), " (low effect)")
+      }
+    }
     
-    # Pairwise comparisons using Wilcoxon’s test:
-    pwc <- my_data2 %>%  wilcox_test(TotalpermL ~ Transit, p.adjust.method = correction)
+    # Perform pairwise comparisons using Wilcoxon’s test
+    pwc <- my_data2 %>% wilcox_test(TotalpermL ~ Transit, p.adjust.method = correction)
     pwc <- subset(pwc, p.adj.signif != "ns")
-    pwc$Vessel <- i; pwc$Transit <- j; df.pwc <- rbind(df.pwc, pwc)
-    # print(pwc) # print pairwise comparisons
+    pwc$Vessel <- i_label
+    pwc$Transit <- j
+    df.pwc <- rbind(df.pwc, pwc)
     
-       
-    if(res.kruskal$p < 0.05){
-      message(crayon::green(paste0("Kruskal-Wallis: Donor ",j,", ",i, ", p = ",res.kruskal$p, effsize)))
-      }else{
-      message(crayon::red(paste0("Kruskal-Wallis: Donor ",j,", ",i, ", p = ",res.kruskal$p, effsize)))}
+    # Print Kruskal-Wallis test result
+    if (res.kruskal$p < 0.05) {
+      kruskal_result <- crayon::green(paste0("Kruskal-Wallis: Donor ", j, ", ", i_label, 
+                                              ", p =", res.kruskal$p, effsize_label))
+    } else {
+      kruskal_result <- crayon::red(paste0("Kruskal-Wallis: Donor ", j, ", ", i_label, 
+                                            ", p =", res.kruskal$p, effsize_label))
+    }
+    message(kruskal_result)
     
     # Visualization: box plots with p-values
     pwc <- pwc %>% add_xy_position(x = "Transit")
-    gglist[[x]]<- ggboxplot(my_data2, x = "Transit", y = "TotalpermL") +
-    stat_pvalue_manual(pwc, hide.ns = TRUE) +
-    labs(title = paste0("Donor ",j,", Vessel ",i),
-    subtitle = get_test_label(res.kruskal, detailed = TRUE),
-    caption = get_pwc_label(pwc))
-    x = x +1}
-}; ggarrange(plotlist = gglist, nrow = 4, ncol = 3)
+    gglist[[x]] <- ggboxplot(my_data2, x = "Transit", y = "TotalpermL") +
+      stat_pvalue_manual(pwc, hide.ns = TRUE) +
+      labs(title = paste0("Donor ", j, ", ", i_label),
+           subtitle = get_test_label(res.kruskal, detailed = TRUE),
+           caption = get_pwc_label(pwc))
+    x <- x + 1
+  }
+}
+
+# Arrange plots in a grid
+ggarrange(plotlist = gglist, nrow = 4, ncol = 3)
+
+
 
 # Between donors
-gglist <- list(); x = 1; df.pwc1 <- data.frame()
-message(paste("Kruskal-Wallis tests with ",correction," correction between donors"))
+# Initialize variables for plotting and storing results
+gglist <- list()
+x <- 1
+df.pwc1 <- data.frame()
+
+# Perform Kruskal-Wallis tests between donors
 for (i in c("P", "D")) {
-  my_data <- subset(df.counts, Vessel == i); my_data <- subset(my_data, Ninetransit == 3);
-  if(i == "P"){i = "Proximal colon"}; if(i == "D"){i = "Distal colon"}
+  my_data <- subset(df.counts, Vessel == i)
+  my_data <- subset(my_data, Ninetransit == 3)
+  
+  # Update the vessel label for readability
+  if (i == "P") { i_label <- "Proximal colon" }
+  if (i == "D") { i_label <- "Distal colon" }
+  
   for (j in c("ST", "MT", "LT")) {
+    # Subset data for the specific transit
     my_data2 <- subset(my_data, Transit == j)
+    
+    # Perform Kruskal-Wallis test
     res.kruskal <- my_data2 %>% rstatix::kruskal_test(TotalpermL ~ Donor)
     
-    # Effect size The interpretation values commonly in published literature are: 
-    # 0.01- < 0.06 (small effect), 0.06 - < 0.14 (moderate    effect) and >= 0.14 (large effect).
+    # Calculate effect size
     effsize <- my_data2 %>% kruskal_effsize(TotalpermL ~ Donor)
-    if(effsize$effsize>0.13){
-      effsize <- paste0(", effsize= ", signif(effsize$effsize, digits = 5)," (large effect size is detected)")
-    }else{if(effsize$effsize>0.06){ 
-      effsize <- paste0(", effsize= ", signif(effsize$effsize, digits = 5)," (moderate effect size is detected)")
-    }else{effsize <- paste0(", effsize= ", signif(effsize$effsize, digits = 5)," (WARNING: low effect size is detected)")}}
+    if (effsize$effsize > 0.13) {
+      effsize_label <- paste0(", effect size = ", signif(effsize$effsize, digits = 5), " (large effect)")
+    } else {
+      if (effsize$effsize > 0.06) {
+        effsize_label <- paste0(", effect size = ", signif(effsize$effsize, digits = 5), " (moderate effect)")
+      } else {
+        effsize_label <- paste0(", effect size = ", signif(effsize$effsize, digits = 5), " (low effect)")
+      }
+    }
     
-    # Pairwise comparisons using Wilcoxon’s test:
-    pwc <- my_data2 %>%  wilcox_test(TotalpermL ~ Donor, p.adjust.method = correction)
+    # Pairwise comparisons using Wilcoxon’s test
+    pwc <- my_data2 %>% wilcox_test(TotalpermL ~ Donor, p.adjust.method = correction)
     pwc <- subset(pwc, p.adj.signif != "ns")
-    pwc$Vessel <- i; pwc$Transit <- j; df.pwc1 <- rbind(df.pwc1, pwc)
-    # print(pwc) # print pairwise comparisons
+    pwc$Vessel <- i_label
+    pwc$Transit <- j
+    df.pwc1 <- rbind(df.pwc1, pwc)
     
-       
-    if(res.kruskal$p < 0.05){
-      message(crayon::green(paste0("Kruskal-Wallis: Transit ",j,", ",i, ", p = ",res.kruskal$p, effsize)))
-      }else{
-      message(crayon::red(paste0("Kruskal-Wallis: Transit ",j,", ",i, ", p = ",res.kruskal$p, effsize)))}
+    # Print Kruskal-Wallis test result
+    if (res.kruskal$p < 0.05) {
+      kruskal_result <- crayon::green(paste0("Kruskal-Wallis: Transit ", j, ", ", i_label, 
+                                              ", p =", res.kruskal$p, effsize_label))
+    } else {
+      kruskal_result <- crayon::red(paste0("Kruskal-Wallis: Transit ", j, ", ", i_label, 
+                                            ", p =", res.kruskal$p, effsize_label))
+    }
+    message(kruskal_result)
     
     # Visualization: box plots with p-values
     pwc <- pwc %>% add_xy_position(x = "Donor")
-    gglist[[x]]<- ggboxplot(my_data2, x = "Donor", y = "TotalpermL") +
-    stat_pvalue_manual(pwc, hide.ns = TRUE) +
-    labs(title = paste0("Transit ",j,", Vessel ",i),
-    subtitle = get_test_label(res.kruskal, detailed = TRUE),
-    caption = get_pwc_label(pwc))
-    x = x +1}
-};  ggarrange(plotlist = gglist, nrow = 2, ncol = 3)
+    gglist[[x]] <- ggboxplot(my_data2, x = "Donor", y = "TotalpermL") +
+      stat_pvalue_manual(pwc, hide.ns = TRUE) +
+      labs(title = paste0("Transit ", j, ", Vessel ", i_label),
+           subtitle = get_test_label(res.kruskal, detailed = TRUE),
+           caption = get_pwc_label(pwc))
+    x <- x + 1
+  }
+}
+
+# Arrange plots in a grid
+ggarrange(plotlist = gglist, nrow = 2, ncol = 3)
 
 
+Checked here
 
 
 
