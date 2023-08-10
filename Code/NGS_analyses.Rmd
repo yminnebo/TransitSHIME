@@ -1,7 +1,13 @@
 ---
-title: "Illumina"
+title: "16S rRNA gene amplicon analysis"
 output: html_document
+author: "Yorick Minnebo"
+date: "19-08-2019"
+updated: "08-08-2023"
+editor_options: 
+  chunk_output_type: inline
 ---
+
 
 
 
@@ -164,7 +170,7 @@ if (RDP == TRUE) {
   taxtable <- subset(taxtable, select = c(Kingdom, Phylum, Class, Order, Family, Genus))
   rm(x, y)
 } else {
-  taxfile <- "stabilityfile.trim.contigs.good.unique.good.filter.unique.precluster.pick.pick.pick.opti_mcc.0.03.cons.taxonomy"
+  taxfile <- "taxtable.taxonomy"
   test <- as.data.frame(tax_table(import_mothur(mothur_constaxonomy_file = taxfile)))
 }
 
