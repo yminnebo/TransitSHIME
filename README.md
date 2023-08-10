@@ -22,11 +22,13 @@ This GitHub repository is organised to provide easy access to the code used in t
 
 If you are interested in replicating the analyses or building upon them, you can start by navigating to the `Code` directory. Inside, you will find individual scripts and markdowns that correspond to different aspects of the analyses carried out in the paper. Each script contains comments and explanations to guide you through the implementation.
 
+Just as a headsup for my code, I like to use `test` as a name for placeholders, temporary objects or dataframes. The permanent objects always get their own specific name. 
+
 ### Which markdowns contain the code to which figures/results?
 
-As you can see, there are 3 markdowns in the code: Analysis-Illumina.Rmd, FCM_analyses.Rmd and SCFA_analyses.Rmd. Each of them contain codes to specific results and figures:
+As you can see, there are 3 markdowns in the code: `NGS_analyses.Rmd`, `FCM_analyses.Rmd` and `SCFA_analyses.Rmd`. Each of them contain codes to specific results and figures:
 * <b>FCM_analyses</b>: The code related to all flow cytometry analyses: Main figure <b>1</b>, Supplementary figures <b>S6, S7 and S8</b>
-* <b>Analysis-Illumina.Rmd</b>: Figure
+* <b>NGS_analyses.Rmd</b>: Figure
 
 
 
