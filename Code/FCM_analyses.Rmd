@@ -237,7 +237,7 @@ FCM_FS1 = FCM_FS1[,param]; FCM_FS2 = FCM_FS2[,param]; FCM_FS3 = FCM_FS3[,param]
 ```
 
 
-## Gate samples
+## Gate samples - skip this chunk and run chunk Check gating split per SHIME run (line 419) if you want to reproduce data with the same gates as in the paper
 The loaded samples are gated through the interactive ggcyto package citation("ggcyto"):
 ```{r Gate samples split per SHIME run}
 
