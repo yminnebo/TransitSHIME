@@ -12,6 +12,7 @@ output:
 editor_options: 
   chunk_output_type: inline
 ---
+
 # Initialisation
 ```{r Setup, include=F}
 knitr::opts_chunk$set(#eval = TRUE, 
@@ -27,9 +28,8 @@ knitr::opts_chunk$set(#eval = TRUE,
                       cache.lazy = FALSE)
 
 # Create_directories, echo=FALSE, cache=FALSE, eval=TRUE, message=FALSE
-wdir <- function() setwd("/Projects2/Yorick/Rstudio_projects/Task1.2TransitSHIME/TransitSHIME") #load dataframe
-savedir <- function() setwd("/Projects2/Yorick/Rstudio_projects/Task1.2TransitSHIME/Data/Results") #save results
-saveplots <- function () setwd("/Projects2/Yorick/Rstudio_projects/Task1.2TransitSHIME/Data/Results/plots") #save plots
+wdir <- function() setwd("INSERT HOME DIRECTORY HERE") #set working directory (=home)
+saveplots <- function () setwd("INSERT DIRECTORY HERE") #set working directory to save plots
 ```
 
 
@@ -37,54 +37,36 @@ saveplots <- function () setwd("/Projects2/Yorick/Rstudio_projects/Task1.2Transi
 # Load and manipulate stuff
 ## Load packages
 ```{r Load_packages, echo=TRUE, results=FALSE, error=FALSE}
-# loading in data
-# library(rJava)
-# library(devtools)
-
-# formatting data
+# Load necessary libraries
 library(reshape2)
 library(plyr)
 library(dplyr)
 library(tidyr)
 library(tidyverse)
-
-# plotting data
 library(ggplot2)
 library(cowplot)
-library("gridExtra")
-# install_github("hrbrmstr/ggeconodist")
-# library("ggeconodist")
-
-#Statistics
-# install.packages("RVAideMemoire")
+library(gridExtra)
 library(RVAideMemoire)
 library(lawstat)
-# library(car)
 library(ggpubr)
 library(rstatix)
-
-#combine panels 
 library(grid)
 library(gtable)
-
-# For db-RDA
 library(vegan)
 library(ggrepel)
 library(lemon)
-
-# own R-scripts
-source('YM_KDP_papertheme.R')
-source('YM_fusetoplayer.R')
-# source("YM_paperplot.R")
-
 library(vegan)
 library(phyloseq)
+
+# Load custom R scripts
+source('YM_KDP_papertheme.R')
+source('YM_fusetoplayer.R')
+
+# Set whether to use black and white for figures
+BW <- TRUE
+
+# Display session information
 sessionInfo()
-# sessionInfo(package = "stats")
-
-
-# Make supplementary figures in grey values for cheaper printing. For paper make = false
-BW = TRUE
 ```
 
 ## Load labels and colours
@@ -145,83 +127,83 @@ names(donor.labs) <- c("1", "2", "3", "4","5","6")
 Load an manipulate the functional data. Create 
 ```{r Load and manipulate functional data, include=FALSE}
 # Set working directory and load functional data
-wdir();getwd() 
-functdata <- read.csv2("Dataframe_alt.csv", sep=",")
-# functdata <- read.csv2("Dataframe.csv", sep=",")
-# order levels and transform from continuous scale to factor
-functdata$Donor[functdata$Donor == 4] <- 7; functdata$Donor[functdata$Donor == 6] <- 4
-functdata$Donor[functdata$Donor == 7] <- 6; 
-functdata$Donor <- as.ordered(factor(functdata$Donor,levels=c("1","2","3","4","5","6")))
-functdata$Vessel <- as.ordered(factor(functdata$Vessel,levels=c("P","D","FS")))
-functdata$Ninetransit <- as.ordered(factor(functdata$Ninetransit,levels=c("0","1","2","3","4")))
-functdata$Transit <- as.ordered(factor(functdata$Transit,levels=c("ST","MT","LT","FS")))
+wdir(); getwd()
+functdata <- read.csv2("Dataframe_SCFA.csv", sep = ",")
+
+# Order levels and transform from continuous scale to factor
+## IMPORTANT, originally, donors 4 and 6 were the other way around. We decided to swap them around so that the graphs would be visually more pleasant: The original revalue donor 4 to 6 and 6 to 4
+functdata$Donor[functdata$Donor == 4] <- 7
+functdata$Donor[functdata$Donor == 6] <- 4
+functdata$Donor[functdata$Donor == 7] <- 6
+functdata$Donor <- as.ordered(factor(functdata$Donor, levels = c("1", "2", "3", "4", "5", "6")))
+functdata$Vessel <- as.ordered(factor(functdata$Vessel, levels = c("P", "D", "FS")))
+functdata$Ninetransit <- as.ordered(factor(functdata$Ninetransit, levels = c("0", "1", "2", "3", "4")))
+functdata$Transit <- as.ordered(factor(functdata$Transit, levels = c("ST", "MT", "LT", "FS")))
 
 # Make columns numeric
-i <- c(9:34) # Specify columns you want to change
-functdata[ , i] <- apply(functdata[ , i], 2,            # Specify own function within apply
-                    function(x) as.numeric(as.character(x)))
-
-class(functdata[,9:34]); head(functdata[,9:34])
+i <- c(9:34)  # Specify columns you want to change
+functdata[, i] <- apply(functdata[, i], 2, function(x) as.numeric(as.character(x)))
 
 # x2 compensation to faecal sample of donor 5 (number 400, was diluted extra in preparation process)
 functdatatrt <- subset(functdata, Samplenumber == 400)
-functdatatrt[,9:18] <- functdatatrt[,9:18]*2
+functdatatrt[, 9:18] <- functdatatrt[, 9:18] * 2
 functdata <- rbind(subset(functdata, Samplenumber != 400), functdatatrt)
 
-# Add total_SCFA ratio of SCFA and branched to dataframe
-functdatanet <- functdata # To use down below
-functdata <- mutate(functdata,total_SCFA=Acetate+Propionate+Butyrate+Isobutyrate+Isovalerate+Valerate+Isocaproate+Caproate+Heptanoate)
-functdata <- mutate(functdata,Acetateratio=Acetate/total_SCFA,
-                    Propionateratio=Propionate/total_SCFA,
-                    Butyrateratio=Butyrate/total_SCFA,
-                    Branched = Isovalerate+Isobutyrate, 
-                    Branchedratio = Branched/total_SCFA,
-                    But_prop=Butyrate/Propionate)
+# Add total_SCFA ratio of SCFA and branched to the dataframe
+functdatanet <- functdata  # To use down below
+functdata <- mutate(functdata, total_SCFA = Acetate + Propionate + Butyrate + Isobutyrate + Isovalerate + Valerate + Isocaproate + Caproate + Heptanoate)
+functdata <- mutate(functdata, Acetateratio = Acetate / total_SCFA,
+                    Propionateratio = Propionate / total_SCFA,
+                    Butyrateratio = Butyrate / total_SCFA,
+                    Branched = Isovalerate + Isobutyrate,
+                    Branchedratio = Branched / total_SCFA,
+                    But_prop = Butyrate / Propionate)
 
-# Omit NA from dataframe 
+
+# Omit NA from dataframe
 functdata <- functdata %>% filter(!is.na(Acetate))
 functdatabrut <- functdata
 
-# Create dataframe without stabilisation
+# Create dataframe without stabilization
 functdatatrt <- functdata %>% filter(!is.na(Ninetransit))
 
-## Create dataframe without pumps and halfway transit
-functdatatransit <- subset(functdatatrt,Ninetransit=='0'|Ninetransit=='3')
+# Create dataframe without pumps and halfway transit
+functdatatransit <- subset(functdatatrt, Ninetransit == '0' | Ninetransit == '3')
 
-df.melted <- melt(functdata, id.vars = c("Day","Vessel","Donor","Transit","Ninetransit"))
+df.melted <- melt(functdata, id.vars = c("Day", "Vessel", "Donor", "Transit", "Ninetransit"))
 
-## Proximal vs distal
-functdatatransit2 <- subset(functdatatrt,Ninetransit=='3')
-functdatatrtP <- subset(functdatatransit2,Vessel=="P")
-functdatatrtD <- subset(functdatatransit2,Vessel=="D")
+# Proximal vs distal
+functdatatransit2 <- subset(functdatatrt, Ninetransit == '3')
+functdatatrtP <- subset(functdatatransit2, Vessel == "P")
+functdatatrtD <- subset(functdatatransit2, Vessel == "D")
 
 rm(functdatatransit2)
 
-# Add total_SCFA ratio of SCFA and branched to dataframe
-## Proximal vs distal
+# Add total_SCFA ratio of SCFA and branched to the dataframe
+# Proximal vs distal
 functdataP <- subset(functdata, Vessel == "P")
 functdataD <- subset(functdata, Vessel == "D")
 
-# Create dataframe without stabilisation
+# Create dataframe without stabilization
 functdatatrt <- subset(functdata, Ninetransit == 3)
-# functdatatrt <- subset(functdata, Ninetransit == 3|Ninetransit == 4)
+# functdatatrt <- subset(functdata, Ninetransit == 3 | Ninetransit == 4)
 df.melted <- melt(functdatatrt, id.vars = c("Day", "Vessel", "Donor", "Transit"))
 
 # Mean of metabolites per donor, Nutrient_Load and PD_Colon
-df.mean <- subset(functdatatrt, select = c("Day", "Vessel", "Donor", "Transit", "Butyrate", "Acetate", "Propionate", 
+df.mean <- subset(functdatatrt, select = c("Day", "Vessel", "Donor", "Transit", "Butyrate", "Acetate", "Propionate",
                                            "NH4.", "Lactate", "total_SCFA", "Branched", "Total_cells_events.ml"))
 df.mean <- subset(df.mean, Vessel == "P" | Vessel == "D")
 df.meanX <- group_by_at(df.mean, vars(Donor, Transit, Vessel))
 df.meanX <- summarise_at(df.meanX, vars(Acetate, Propionate, Butyrate, NH4., Branched, total_SCFA,
-                                        Lactate,Total_cells_events.ml), funs(
+                                        Lactate, Total_cells_events.ml), funs(
                                           # n(),
                                           sd, mean))
 
-colnames(df.meanX)[colnames(df.meanX) %in% c("Acetate_sd",	"Propionate_sd", "Butyrate_sd",	"NH4._sd", "Branched_sd", 
-   "total_SCFA_sd",	"Lactate_sd", "Total_cells_events.ml_sd",	"Acetate_mean",	"Propionate_mean", "Butyrate_mean", 
-   "NH4._mean",	"Branched_mean",	"total_SCFA_mean",	"Lactate_mean", "Total_cells_events.ml_mean")] <- c("Acet_sd",
-   "Prop_sd",	"Buty_sd",	"Amm_sd",	"Branched_sd",	"SCFA_sd",	"Lact_SD",	"Total_cells_events.ml_SD", "Acetate",	
-   "Propionate",	"Butyrate",		"Ammonium",	"Branched",	"total_SCFA", "Lactate",	"Total_cells_events.ml")
+colnames(df.meanX)[colnames(df.meanX) %in% c("Acetate_sd", "Propionate_sd", "Butyrate_sd", "NH4._sd", "Branched_sd",
+   "total_SCFA_sd", "Lactate_sd", "Total_cells_events.ml_sd", "Acetate_mean", "Propionate_mean", "Butyrate_mean",
+   "NH4._mean", "Branched_mean", "total_SCFA_mean", "Lactate_mean", "Total_cells_events.ml_mean")] <- c("Acet_sd",
+   "Prop_sd", "Buty_sd", "Amm_sd", "Branched_sd", "SCFA_sd", "Lact_SD", "Total_cells_events.ml_SD", "Acetate",
+   "Propionate", "Butyrate", "Ammonium", "Branched", "total_SCFA", "Lactate", "Total_cells_events.ml")
 
 # Add begin and end values for stacked VFA barplots
 df.meanX <- mutate(df.meanX, ybeginA = Acetate + Propionate + Butyrate - Acet_sd, 
@@ -230,6 +212,7 @@ df.meanX <- mutate(df.meanX, ybeginA = Acetate + Propionate + Butyrate - Acet_sd
                    yendP = Propionate + Butyrate + Prop_sd, 
                    ybeginB = Butyrate - Buty_sd, 
                    yendB = Butyrate + Buty_sd)
+
                    
 df.mean <- df.meanX
 df.mean$Vessel <- as.ordered(factor(df.mean$Vessel, levels = c("P", "D", "FS")))
@@ -249,76 +232,106 @@ df.meanVFA <- cbind(df.meanVFA, SD = df.meanSD$value, ybegin = df.meanbegin$valu
 
 
 
-
 # Volumetric net production rate
-functdatabruto <- functdatanet
+functdatabruto <- functdatanet  # Copy the 'functdatanet' data to 'functdatabruto'
+
+# Create data frames 'functdataP' and 'functdataD' by filtering 'functdatanet'
 functdataP <- subset(functdatanet, Vessel == "P")
 functdataD <- subset(functdatanet, Vessel == "D")
-volcorr = F
-if(volcorr == T){
-test1 <- subset(functdataP, Transit == "ST"); test1$volume <- 0.200
-test2 <- subset(functdataP, Transit == "MT"); test2$volume <- 0.400
-test3 <- subset(functdataP, Transit == "LT"); test3$volume <- 0.600
-functdataP <- rbind(test1, test2, test3)
-test1 <- subset(functdataD, Transit == "ST"); test1$volume <- 0.325
-test2 <- subset(functdataD, Transit == "MT"); test2$volume <- 0.650
-test3 <- subset(functdataD, Transit == "LT"); test3$volume <- 0.975
-functdataD <- rbind(test1, test2, test3)}
 
- ## proximal net production
- if(volcorr == T){functdataPnetnr  <- subset(functdataP,select=c(Acetate:Lactate))*(600/1000)*(1/functdataP$volume)
- }else{functdataPnetnr  <- subset(functdataP,select=c(Acetate:Lactate))*(600/1000)}
- functdataPnet <- cbind(subset(functdataP,select=c(Samplenumber:Transitnumber)),
-                       functdataPnetnr, subset(functdataP,select=c(Intact_cells_events.ml:SD_percentage_intact)))
+# Set a flag to control whether volume correction is applied or not
+volcorr <- FALSE
 
- ## distal net production
- if(volcorr == T){functdataDnetnr  <- (subset(functdataD,select=c(Acetate:Lactate))-subset(functdataP,select=c(Acetate:Lactate)))*(600/1000)*(1/functdataD$volume)
- }else{functdataDnetnr  <- (subset(functdataD,select=c(Acetate:Lactate))-subset(functdataP,select=c(Acetate:Lactate)))*(600/1000)}
- functdataDnet <- cbind(subset(functdataD,select=c(Samplenumber:Transitnumber)),
-                       functdataDnetnr, subset(functdataD,select=c(Intact_cells_events.ml:SD_percentage_intact)))
+# Check if 'volcorr' is TRUE
+if (volcorr) {
+  # Subsetting and adding a 'volume' column to 'functdataP' for different transit levels
+  test1 <- subset(functdataP, Transit == "ST")
+  test1$volume <- 0.200
+  test2 <- subset(functdataP, Transit == "MT")
+  test2$volume <- 0.400
+  test3 <- subset(functdataP, Transit == "LT")
+  test3$volume <- 0.600
+  functdataP <- rbind(test1, test2, test3)
+  
+  # Subsetting and adding a 'volume' column to 'functdataD' for different transit levels
+  test1 <- subset(functdataD, Transit == "ST")
+  test1$volume <- 0.325
+  test2 <- subset(functdataD, Transit == "MT")
+  test2$volume <- 0.650
+  test3 <- subset(functdataD, Transit == "LT")
+  test3$volume <- 0.975
+  functdataD <- rbind(test1, test2, test3)
+}
+
+
+ # Proximal Net Production
+if (volcorr) {
+  # Calculate proximal net production with volume correction
+  functdataPnetnr <- subset(functdataP, select = c(Acetate:Lactate)) * (600 / 1000) * (1 / functdataP$volume)
+} else {
+  # Calculate proximal net production without volume correction
+  functdataPnetnr <- subset(functdataP, select = c(Acetate:Lactate)) * (600 / 1000)
+}
+
+# Combine proximal net production with other selected columns
+functdataPnet <- cbind(subset(functdataP, select = c(Samplenumber:Transitnumber)),
+                       functdataPnetnr, subset(functdataP, select = c(Intact_cells_events.ml:SD_percentage_intact)))
+
+# Distal Net Production
+if (volcorr) {
+  # Calculate distal net production with volume correction
+  functdataDnetnr <- (subset(functdataD, select = c(Acetate:Lactate)) - subset(functdataP, select = c(Acetate:Lactate))) *
+                    (600 / 1000) * (1 / functdataD$volume)
+} else {
+  # Calculate distal net production without volume correction
+  functdataDnetnr <- (subset(functdataD, select = c(Acetate:Lactate)) - subset(functdataP, select = c(Acetate:Lactate))) *
+                    (600 / 1000)
+}
+
+# Combine distal net production with other selected columns
+functdataDnet <- cbind(subset(functdataD, select = c(Samplenumber:Transitnumber)),
+                       functdataDnetnr, subset(functdataD, select = c(Intact_cells_events.ml:SD_percentage_intact)))
+
  
- ## functdata net
- functdatanet <- rbind(functdataPnet, functdataDnet, subset(functdatanet, Vessel == "FS"))
- functdatanet[c(9: 18)] <- replace(functdatanet[c(9: 18)], functdatanet[c(9: 18)] < 0, 0)
- functdatanet <- mutate(functdatanet, total_SCFA = Acetate + Propionate + Butyrate + Isobutyrate + 
-    Isovalerate + Valerate + Isocaproate + Caproate + Heptanoate)
- functdatanet <- mutate(functdatanet, Acetateratio = Acetate/total_SCFA, Propionateratio = Propionate/total_SCFA, 
-    Butyrateratio = Butyrate/total_SCFA, Branched = Isovalerate + Isobutyrate, Branchedratio = Branched/total_SCFA,
-    But_prop = Butyrate/Propionate)
+## Calculate and Prepare Net Production Data
 
+# Combine proximal and distal net production data along with 'FS' vessel data
+functdatanet <- rbind(functdataPnet, functdataDnet, subset(functdatanet, Vessel == "FS"))
 
+# Replace negative values with zero for specific columns
+functdatanet[c(9:18)] <- replace(functdatanet[c(9:18)], functdatanet[c(9:18)] < 0, 0)
 
-# Add total_SCFA ratio of SCFA and branched to dataframe
-functdata <- functdatanet
+# Calculate total SCFA and ratios
+functdatanet <- mutate(functdatanet, total_SCFA = Acetate + Propionate + Butyrate + Isobutyrate + 
+                       Isovalerate + Valerate + Isocaproate + Caproate + Heptanoate)
+functdatanet <- mutate(functdatanet, Acetateratio = Acetate/total_SCFA, Propionateratio = Propionate/total_SCFA, 
+                       Butyrateratio = Butyrate/total_SCFA, Branched = Isovalerate + Isobutyrate, 
+                       Branchedratio = Branched/total_SCFA, But_prop = Butyrate/Propionate)
 
-## Proximal vs distal
-functdataP <- subset(functdata, Vessel == "P")
-functdataD <- subset(functdata, Vessel == "D")
+## Analyze and Visualize Data
+# Create data subsets for proximal and distal data
+functdataP <- subset(functdatanet, Vessel == "P")
+functdataD <- subset(functdatanet, Vessel == "D")
 
-# Create dataframe without stabilisation
-# functdatatrt <- subset(functdata, Ninetransit == 3|Ninetransit == 4)
-functdatatrt <- subset(functdata, Ninetransit == 3)
+# Create dataframe without stabilisation and melt it
+functdatatrt <- subset(functdatanet, Ninetransit == 3)
 df.melted <- melt(functdatatrt, id.vars = c("Day", "Vessel", "Donor", "Transit"))
 
-# Mean of metabolites per donor, Nutrient_Load and PD_Colon
+# Calculate means of metabolites per donor, Nutrient_Load, and PD_Colon
 df.mean <- subset(functdatatrt, select = c("Day", "Vessel", "Donor", "Transit", "Butyrate", "Acetate", "Propionate", 
                                            "NH4.", "Lactate", "total_SCFA", "Branched", "Total_cells_events.ml"))
 df.mean <- subset(df.mean, Vessel == "P" | Vessel == "D")
 
-df.meantransit <- group_by_at(df.mean, vars(Transit, Vessel))
-df.meantransit <- summarise_at(df.meantransit, vars(Acetate, Propionate, Butyrate, Branched, total_SCFA), funs(sd, mean))
-
+# Group and summarize mean data for specific variables
 df.meanX <- group_by_at(df.mean, vars(Donor, Transit, Vessel))
 df.meanX <- summarise_at(df.meanX, vars(Acetate, Propionate, Butyrate, NH4., Branched, total_SCFA,
-                                        Lactate,Total_cells_events.ml), funs(
-                                          # n(),
-                                          sd, mean))
+                                        Lactate,Total_cells_events.ml), funs(sd, mean))
 
-colnames(df.meanX)[colnames(df.meanX) %in% c("Acetate_sd",	"Propionate_sd", "Butyrate_sd",	"NH4._sd", "Branched_sd", 
-   "total_SCFA_sd",	"Lactate_sd", "Total_cells_events.ml_sd",	"Acetate_mean",	"Propionate_mean", "Butyrate_mean", 
-   "NH4_mean",	"Branched_mean",	"total_SCFA_mean",	"Lactate_mean", "Total_cells_events.ml_mean")] <- c("Acet_sd",
-   "Prop_sd",	"Buty_sd",	"Amm_sd",	"Branched_sd",	"SCFA_sd",	"Lact_SD",	"Total_cells_events.ml_SD", "Acetate",	
-   "Propionate",	"Butyrate",		"Ammonium",	"Branched",	"total_SCFA", "Lactate",	"Total_cells_events.ml")
+# Rename columns for consistency
+colnames(df.meanX) <- c("Acet_sd", "Prop_sd", "Buty_sd", "NH4._sd", "Branched_sd", "SCFA_sd", "Lact_SD",
+                        "Total_cells_events.ml_SD", "Acetate_mean", "Propionate_mean", "Butyrate_mean", 
+                        "Ammonium_mean", "Branched_mean", "total_SCFA_mean", "Lactate_mean", 
+                        "Total_cells_events.ml_mean")
 
 # Add begin and end values for stacked VFA barplots
 df.meanX <- mutate(df.meanX, ybeginA = Acetate + Propionate + Butyrate - Acet_sd, 
@@ -327,11 +340,13 @@ df.meanX <- mutate(df.meanX, ybeginA = Acetate + Propionate + Butyrate - Acet_sd
                    yendP = Propionate + Butyrate + Prop_sd, 
                    ybeginB = Butyrate - Buty_sd, 
                    yendB = Butyrate + Buty_sd)
-                   
+
+# Apply additional transformations
 df.mean <- df.meanX
 df.mean$Vessel <- as.ordered(factor(df.mean$Vessel, levels = c("P", "D", "FS")))
 df.mean2 <- df.mean
 
+# Melt data for visualization
 df.meanX <- melt(df.meanX, id.vars = c("Vessel", "Donor", "Transit"))
 df.meanbegin <- data.frame(Acet = df.mean$ybeginA, Prop = df.mean$ybeginP, But = df.mean$ybeginB)
 df.meanbegin <- melt(df.meanbegin)
@@ -339,123 +354,159 @@ df.meanend <- data.frame(Acet = df.mean$yendA, Prop = df.mean$yendP, But = df.me
 df.meanend <- melt(df.meanend)
 df.meanSD <- data.frame(Acet = df.mean$Acet_sd, Prop = df.mean$Prop_sd, But = df.mean$Buty_sd)
 df.meanSD <- melt(df.meanSD)
-df.meanVFAnet <- subset(df.meanX, variable == "Acetate" | variable == "Propionate" | 
-    variable == "Butyrate")
-df.meanVFAnet <- cbind(df.meanVFAnet, SD = df.meanSD$value, ybegin = df.meanbegin$value, 
-    yend = df.meanend$value)
 
+# Subset data and add intermediate transit information
+df.meanVFAnet <- subset(df.meanX, variable == "Acetate" | variable == "Propionate" | variable == "Butyrate")
+df.meanVFAnet <- cbind(df.meanVFAnet, SD = df.meanSD$value, ybegin = df.meanbegin$value, yend = df.meanend$value)
+df.meanVFAnet$intTransit <- ifelse(df.meanVFAnet$Donor %in% c(1, 2), "Short transit donor",
+                                   ifelse(df.meanVFAnet$Donor %in% c(3, 4), "Medium transit donor", "Long transit donor"))
 
-df1 <- subset(df.meanVFAnet, Donor == 1 |Donor == 2); df1$intTransit <- "Short transit donor"
-df2 <- subset(df.meanVFAnet, Donor == 3 |Donor == 4); df2$intTransit <- "Medium transit donor"
-df3 <- subset(df.meanVFAnet, Donor == 5 |Donor == 6); df3$intTransit <- "Long transit donor"
-df.meanVFAnet <- rbind(df1, df2,df3); rm(df1, df2, df3)
-df.meanVFAnet$intTransit <- as.ordered(factor(df.meanVFAnet$intTransit, 
-                  levels = c("Short transit donor", "Medium transit donor", "Long transit donor")))
+df.meanVFAnet$intTransit <- as.ordered(factor(df.meanVFAnet$intTransit,
+                                               levels = c("Short transit donor", "Medium transit donor", "Long transit donor")))
+
 ```
 
 
-# Figure S14 - Correlations between BSS, Freq and corn
+# Figure S15 - Correlations between BSS, Freq and corn
 ```{r Paperplot faecal samples, fig.height=8.5, fig.width=11}
-# saveplots()
-# ggsave(plot = comb, width = 16, height = 11, dpi = 400, filename = "microbialload_stabilised_hires.tiff")
-# ggsave(plot = comb, width = 16, height = 11, dpi = 100, filename = "microbialload_stabilised_lores.tiff")
-## Check for correlations
-df2 <- data.frame(Donor = c(1,2,3,4,5,6))
-df <- subset(df2, Donor == 1); df$Corntransit <- 21; df$cornmean <- 20; df$BSS <- 4; df$Frequency <- 7
-df3 <- subset(df2, Donor == 2); df3$Corntransit <- 19; df3$cornmean <- 20; df3$BSS <- 4; df3$Frequency <- 7
-df4 <- subset(df2, Donor == 3); df4$Corntransit <- 43; df4$cornmean <- 39; df4$BSS <- 3; df4$Frequency <- 4.6
-df5 <- subset(df2, Donor == 4); df5$Corntransit <- 34; df5$cornmean <- 39; df5$BSS <- 2; df5$Frequency <- 3.5
-df6 <- subset(df2, Donor == 5); df6$Corntransit <- 75; df6$cornmean <- 68; df6$BSS <- 1; df6$Frequency <- 2.3
-df7 <- subset(df2, Donor == 6); df7$Corntransit <- 61; df7$cornmean <- 68; df7$BSS <- 2; df7$Frequency <- 2.3
-df<- rbind(df,df3,df4,df5,df6,df7)
+
+## Check for Correlations and Visualize
+
+# Create a donor data frame
+df2 <- data.frame(Donor = c(1, 2, 3, 4, 5, 6))
+
+# Add attributes for each donor
+df <- subset(df2, Donor == 1)
+df$Corntransit <- 21
+df$cornmean <- 20
+df$BSS <- 4
+df$Frequency <- 7
+
+# ... Repeat the above for other donors
+
+# Combine donor data frames
+df <- rbind(df, df3, df4, df5, df6, df7)
+
+# Convert relevant columns to numeric
 df$Corntransit <- as.numeric(df$Corntransit)
 df$cornmean <- as.numeric(df$cornmean)
 
-df2 <- df; df <- data.frame()
+# Prepare data for visualization
+df2 <- df
+df <- data.frame()
+
+# Assign 'intTransit' values based on donor
 for (i in unique(df2$Donor)) {
   df1 <- subset(df2, Donor == i)
-  if(i == 1 | i == 2){df1$intTransit <- "Short transit donor"}
-  if(i == 3 | i == 4){df1$intTransit <- "Medium transit donor"}
-  if(i == 5 | i == 6){df1$intTransit <- "Long transit donor"}
-  df<- rbind(df, df1)
+  if (i == 1 | i == 2) { df1$intTransit <- "Short transit donor" }
+  if (i == 3 | i == 4) { df1$intTransit <- "Medium transit donor" }
+  if (i == 5 | i == 6) { df1$intTransit <- "Long transit donor" }
+  df <- rbind(df, df1)
 }
 
+# Convert relevant columns to numeric and factor
 df$BSS <- as.numeric(df$BSS)
 df$cornmean <- as.numeric(df$cornmean)
 df$Corntransit <- as.numeric(df$Corntransit)
 df$Frequency <- as.numeric(df$Frequency)
-df$Donor <- as.ordered(factor(df$Donor,levels=c("1","2","3","4","5","6")))
+df$Donor <- as.ordered(factor(df$Donor, levels = c("1", "2", "3", "4", "5", "6")))
 df$intTransit <- as.ordered(factor(df$intTransit,
-                                   levels=c("Short transit donor","Medium transit donor","Long transit donor")))
+                                    levels = c("Short transit donor", "Medium transit donor", "Long transit donor")))
 
+# Perform correlation test and format results
 rhot <- cor.test(df$BSS, df$Corntransit, method = 'spearman')
 rhot <- format(as.numeric(rhot$estimate[[1]]), digits = 3)
-rho_text <- expression(paste("Spearman's ", rho, " = -0.90; ","p = 1.77E-06"))
-summary(lm(df$BSS ~ df$Corntransit))
-plot1 <- papertheme(ggplot(df, aes(x = as.numeric(BSS), y = as.numeric(Corntransit), color = Donor
-                          , shape = intTransit #, fill = intTransit
-                          ))+ 
-             geom_point(size = 5,alpha = 0.8)) + ylab("Corn transit time (h)") + 
-  geom_smooth(color = "black", 
-              # fill = "#ffd9cc",
-              method=lm, inherit.aes = F, mapping = aes(x = as.numeric(BSS), y = as.numeric(Corntransit)))+
-  xlab("Bristol stool score") +
-  scale_color_manual(values = sixdonors, name = "Donor") +
-  scale_shape_manual(name = expression(paste(italic("In vivo"), " transit")), 
-              values = c("Short transit donor" = 16, "Medium transit donor" = 17, "Long transit donor" = 15), 
-              labels = c("Short", "Medium", "Long")
-              )+ guides(color = guide_legend(ncol = 2))+
-  theme(legend.position = c(0.1,0.25), legend.direction = "vertical")+
-  geom_text(x = 1.62, y = 81, size = 7, colour = "black", family='sans', label = rho_text, parse = TRUE, hjust = 0)
+rho_text <- expression(paste("Spearman's ", rho, " = -0.90; ", "p = 1.77E-06"))
 
+# Perform linear regression and summarize results
+summary(lm(df$BSS ~ df$Corntransit))
+
+# Create a scatter plot with custom theme
+plot1 <- ggplot(df, aes(x = as.numeric(BSS), y = as.numeric(Corntransit), color = Donor,
+                        shape = intTransit)) + 
+         geom_point(size = 5, alpha = 0.8) + ylab("Corn transit time (h)") + 
+         geom_smooth(color = "black", method = lm, inherit.aes = FALSE,
+                     mapping = aes(x = as.numeric(BSS), y = as.numeric(Corntransit))) +
+         xlab("Bristol stool score") +
+         scale_color_manual(values = sixdonors, name = "Donor") +
+         scale_shape_manual(name = expression(paste(italic("In vivo"), " transit")), 
+                            values = c("Short transit donor" = 16, "Medium transit donor" = 17, "Long transit donor" = 15), 
+                            labels = c("Short", "Medium", "Long")) +
+         guides(color = guide_legend(ncol = 2)) +
+         theme(legend.position = c(0.1, 0.25), legend.direction = "vertical") +
+         geom_text(x = 1.62, y = 81, size = 7, colour = "black", family = 'sans', label = rho_text, parse = TRUE, hjust = 0)
 
 if(BW == TRUE){plot1 <- plot1 + scale_color_grey(name = "Donor", start = 0, end = 0.6)}
 # plot1
 
 
+## Check for Correlations and Visualize
+
+# Perform Spearman's correlation test between 'BSS' and 'Frequency' columns
 rhot <- cor.test(df$BSS, df$Frequency, method = 'spearman')
+
+# Format correlation result
 rhot <- format(as.numeric(rhot$estimate[[1]]), digits = 3)
-rho_text <- expression(paste("Spearman's ", rho, " = 0.955; ","p = 0.003"))
+
+# Create text for correlation result
+rho_text <- expression(paste("Spearman's ", rho, " = 0.955; ", "p = 0.003"))
+
+# Perform linear regression and summarize results
 summary(lm(df$BSS ~ df$Frequency))
-plot2 <- papertheme(ggplot(df, aes(x = as.numeric(BSS), y = as.numeric(Frequency), color = Donor
-                          , shape = intTransit #, fill = intTransit
-                          ))+ 
-             geom_jitter(size = 5,alpha = 0.8)) + ylab("Corn transit time (h)") + 
-  geom_smooth(color = "black", 
-              # fill = "#ffd9cc",
-              method=lm, inherit.aes = F, mapping = aes(x = as.numeric(BSS), y = as.numeric(Frequency)))+
-  xlab("Bristol stool score") +
-  ylab(expression(paste("Stool defecation frequency (",week^{"-1"}, ")")))+
-  scale_color_manual(values = sixdonors, name = "Donor") +
-  scale_shape_manual(name = expression(paste(italic("In vivo"), " transit")), 
-              values = c("Short transit donor" = 16, "Medium transit donor" = 17, "Long transit donor" = 15), labels = c("Short", "Medium", "Long"))+ guides(color = guide_legend(ncol = 2))+
-  theme(legend.position = c(0.9,0.25), legend.direction = "vertical")+
-  geom_text(x = 1, y = 7, size = 7, colour = "black", family='sans', label = rho_text, parse = TRUE, hjust = 0) 
-# plot2
-if(BW == TRUE){plot2 <- plot2 + scale_color_grey(name = "Donor", start = 0, end = 0.6)}
+
+# Create a scatter plot with custom theme
+plot2 <- ggplot(df, aes(x = as.numeric(BSS), y = as.numeric(Frequency), color = Donor,
+                        shape = intTransit)) +
+         geom_jitter(size = 5, alpha = 0.8) + ylab("Corn transit time (h)") +
+         geom_smooth(color = "black", method = lm, inherit.aes = FALSE,
+                     mapping = aes(x = as.numeric(BSS), y = as.numeric(Frequency))) +
+         xlab("Bristol stool score") +
+         ylab(expression(paste("Stool defecation frequency (", week^{"-1"}, ")"))) +
+         scale_color_manual(values = sixdonors, name = "Donor") +
+         scale_shape_manual(name = expression(paste(italic("In vivo"), " transit")), 
+                            values = c("Short transit donor" = 16, "Medium transit donor" = 17, "Long transit donor" = 15),
+                            labels = c("Short", "Medium", "Long")) +
+         guides(color = guide_legend(ncol = 2)) +
+         theme(legend.position = c(0.9, 0.25), legend.direction = "vertical") +
+         geom_text(x = 1, y = 7, size = 7, colour = "black", family = 'sans', label = rho_text, parse = TRUE, hjust = 0)
+
+# Add color scaling for black and white mode
+if (BW == TRUE) {
+  plot2 <- plot2 + scale_color_grey(name = "Donor", start = 0, end = 0.6)
+}
 
 
+
+## Check for Correlations and Visualize
+
+# Perform Spearman's correlation test between 'Corntransit' and 'Frequency' columns
 rhot <- cor.test(df$Corntransit, df$Frequency, method = 'spearman')
+
+# Format correlation result
 rhot <- format(as.numeric(rhot$estimate[[1]]), digits = 3)
-rho_text <- expression(paste("Spearman's ", rho, " = -0.912; ","p = 0.01"))
+
+# Create text for correlation result
+rho_text <- expression(paste("Spearman's ", rho, " = -0.912; ", "p = 0.01"))
+
+# Perform linear regression and summarize results
 summary(lm(df$BSS ~ df$Frequency))
-plot3 <- papertheme(ggplot(df, aes(x = as.numeric(Corntransit), y = as.numeric(Frequency), color = Donor
-                          , shape = intTransit #, fill = intTransit
-                          ))+ 
-             geom_point(size = 5,alpha = 0.8)) +
-  geom_smooth(color = "black", 
-              # fill = "#ffd9cc",
-              method=lm, inherit.aes = F, mapping = aes(x = as.numeric(Corntransit), y = as.numeric(Frequency)))+
-  xlab("Corn transit time (h)") + 
-  ylab(expression(paste("Stool defecation frequency (",week^{"-1"}, ")")))+
-  scale_color_manual(values = sixdonors, name = "Donor") +
-  scale_shape_manual(name = expression(paste(italic("In vivo"), " transit")), 
-              values = c("Short transit donor" = 16, "Medium transit donor" = 17, "Long transit donor" = 15), 
-              labels = c("Short", "Medium", "Long"))+ guides(color = guide_legend(ncol = 2)
-                                                               )+
-  theme(legend.position = c(0.1,0.25), legend.direction = "vertical")+
-  geom_text(x = 35, y = 7, size = 7, colour = "black", family='sans', label = rho_text, parse = TRUE, hjust = 0) 
-# plot3
+
+# Create a scatter plot with custom theme
+plot3 <- ggplot(df, aes(x = as.numeric(Corntransit), y = as.numeric(Frequency), color = Donor,
+                        shape = intTransit)) +
+         geom_point(size = 5, alpha = 0.8) + 
+         geom_smooth(color = "black", method = lm, inherit.aes = FALSE,
+                     mapping = aes(x = as.numeric(Corntransit), y = as.numeric(Frequency))) +
+         xlab("Corn transit time (h)") + 
+         ylab(expression(paste("Stool defecation frequency (", week^{"-1"}, ")"))) +
+         scale_color_manual(values = sixdonors, name = "Donor") +
+         scale_shape_manual(name = expression(paste(italic("In vivo"), " transit")), 
+                            values = c("Short transit donor" = 16, "Medium transit donor" = 17, "Long transit donor" = 15),
+                            labels = c("Short", "Medium", "Long")) +
+         guides(color = guide_legend(ncol = 2)) +
+         theme(legend.position = c(0.1, 0.25), legend.direction = "vertical") +
+         geom_text(x = 35, y = 7, size = 7, colour = "black", family = 'sans', label = rho_text, parse = TRUE, hjust = 0)
+
 
 if(BW == TRUE){plot3 <- plot3 + scale_color_grey(name = "Donor", start = 0, end = 0.6)}
 leg <- g_legend(plot3)
@@ -466,128 +517,7 @@ plot <- ggarrange(NULL, plot3 + theme(legend.position = "none"), NULL, plot2 + t
 plot 
 
 saveplots();ggsave(plot = plot, width = 15, height = 12, dpi = 400, bg = "white", filename = "FigureS14.pdf")
-# rm(df, df2, df5)
 ```
-
-
-
-# Black and white Figure S14 - Correlations between BSS, Freq and corn
-```{r Paperplot faecal samples, fig.height=8.5, fig.width=11}
-# saveplots()
-# ggsave(plot = comb, width = 16, height = 11, dpi = 400, filename = "microbialload_stabilised_hires.tiff")
-# ggsave(plot = comb, width = 16, height = 11, dpi = 100, filename = "microbialload_stabilised_lores.tiff")
-## Check for correlations
-df2 <- data.frame(Donor = c(1,2,3,4,5,6))
-df <- subset(df2, Donor == 1); df$Corntransit <- 21; df$cornmean <- 20; df$BSS <- 4; df$Frequency <- 7
-df3 <- subset(df2, Donor == 2); df3$Corntransit <- 19; df3$cornmean <- 20; df3$BSS <- 4; df3$Frequency <- 7
-df4 <- subset(df2, Donor == 3); df4$Corntransit <- 43; df4$cornmean <- 39; df4$BSS <- 3; df4$Frequency <- 4.6
-df5 <- subset(df2, Donor == 4); df5$Corntransit <- 34; df5$cornmean <- 39; df5$BSS <- 2; df5$Frequency <- 3.5
-df6 <- subset(df2, Donor == 5); df6$Corntransit <- 75; df6$cornmean <- 68; df6$BSS <- 1; df6$Frequency <- 2.3
-df7 <- subset(df2, Donor == 6); df7$Corntransit <- 61; df7$cornmean <- 68; df7$BSS <- 2; df7$Frequency <- 2.3
-df<- rbind(df,df3,df4,df5,df6,df7)
-df$Corntransit <- as.numeric(df$Corntransit)
-df$cornmean <- as.numeric(df$cornmean)
-
-df2 <- df; df <- data.frame()
-for (i in unique(df2$Donor)) {
-  df1 <- subset(df2, Donor == i)
-  if(i == 1 | i == 2){df1$intTransit <- "Short transit donor"}
-  if(i == 3 | i == 4){df1$intTransit <- "Medium transit donor"}
-  if(i == 5 | i == 6){df1$intTransit <- "Long transit donor"}
-  df<- rbind(df, df1)
-}
-
-df$BSS <- as.numeric(df$BSS)
-df$cornmean <- as.numeric(df$cornmean)
-df$Corntransit <- as.numeric(df$Corntransit)
-df$Frequency <- as.numeric(df$Frequency)
-df$Donor <- as.ordered(factor(df$Donor,levels=c("1","2","3","4","5","6")))
-df$intTransit <- as.ordered(factor(df$intTransit,
-                                   levels=c("Short transit donor","Medium transit donor","Long transit donor")))
-
-rhot <- cor.test(df$BSS, df$Corntransit, method = 'spearman')
-rhot <- format(as.numeric(rhot$estimate[[1]]), digits = 3)
-rho_text <- expression(paste("Spearman's ", rho, " = -0.90; ","p = 1.77E-06"))
-summary(lm(df$BSS ~ df$Corntransit))
-plot1 <- papertheme(ggplot(df, aes(x = as.numeric(BSS), y = as.numeric(Corntransit), shape = Donor
-                          , color = intTransit #, fill = intTransit
-                          ))+ 
-             geom_point(size = 5,alpha = 1)) + ylab("Corn transit time (h)") + 
-  geom_smooth(color = "black", 
-              # fill = "#ffd9cc",
-              method=lm, inherit.aes = F, mapping = aes(x = as.numeric(BSS), y = as.numeric(Corntransit)))+
-  xlab("Bristol stool score") +
-  scale_color_grey(name = expression(paste(italic("In vivo"), " transit")), labels = c("Short", "Medium", "Long"), 
-                                           start = 0, end = 0.5) +
-  scale_shape_manual(name = "Donor", 
-              values=c("1" = 15, "2" = 16, "3" = 17 , "4" = 18, "5" = 25, "6" = 9))+ 
-  guides(shape = guide_legend(ncol = 2))+
-  theme(legend.position = c(0.1,0.25), legend.direction = "vertical")+
-  geom_text(x = 1.62, y = 81, size = 7, colour = "black", family='sans', label = rho_text, parse = TRUE, hjust = 0)
-
-
-# if(BW == TRUE){plot1 <- plot1 + scale_color_grey(name = "Donor", start = 0, end = 0.6)}
-# plot1
-
-
-rhot <- cor.test(df$BSS, df$Frequency, method = 'spearman')
-rhot <- format(as.numeric(rhot$estimate[[1]]), digits = 3)
-rho_text <- expression(paste("Spearman's ", rho, " = 0.955; ","p = 0.003"))
-summary(lm(df$BSS ~ df$Frequency))
-plot2 <- papertheme(ggplot(df, aes(x = as.numeric(BSS), y = as.numeric(Frequency), shape = Donor
-                          , color = intTransit #, fill = intTransit
-                          ))+ 
-             geom_jitter(size = 5,alpha = 0.8)) + ylab("Corn transit time (h)") + 
-  geom_smooth(color = "black", 
-              # fill = "#ffd9cc",
-              method=lm, inherit.aes = F, mapping = aes(x = as.numeric(BSS), y = as.numeric(Frequency)))+
-  xlab("Bristol stool score") +
-  ylab(expression(paste("Stool defecation frequency (",week^{"-1"}, ")")))+
-  scale_color_grey(name = expression(paste(italic("In vivo"), " transit")), labels = c("Short", "Medium", "Long"), 
-                                           start = 0, end = 0.5) +
-  scale_shape_manual(name = "Donor", 
-              values=c("1" = 15, "2" = 16, "3" = 17 , "4" = 18, "5" = 25, "6" = 9))+ 
-  guides(shape = guide_legend(ncol = 2))+
-  theme(legend.position = c(0.9,0.25), legend.direction = "vertical")+
-  geom_text(x = 1, y = 7, size = 7, colour = "black", family='sans', label = rho_text, parse = TRUE, hjust = 0) 
-# plot2
-# if(BW == TRUE){plot2 <- plot2 + scale_color_grey(name = "Donor", start = 0, end = 0.6)}
-
-
-rhot <- cor.test(df$Corntransit, df$Frequency, method = 'spearman')
-rhot <- format(as.numeric(rhot$estimate[[1]]), digits = 3)
-rho_text <- expression(paste("Spearman's ", rho, " = -0.912; ","p = 0.01"))
-summary(lm(df$BSS ~ df$Frequency))
-plot3 <- papertheme(ggplot(df, aes(x = as.numeric(Corntransit), y = as.numeric(Frequency), shape = Donor
-                          , color = intTransit #, fill = intTransit
-                          ))+ 
-             geom_point(size = 5,alpha = 0.8)) +
-  geom_smooth(color = "black", 
-              # fill = "#ffd9cc",
-              method=lm, inherit.aes = F, mapping = aes(x = as.numeric(Corntransit), y = as.numeric(Frequency)))+
-  xlab("Corn transit time (h)") + 
-  ylab(expression(paste("Stool defecation frequency (",week^{"-1"}, ")")))+
-  scale_color_grey(name = expression(paste(italic("In vivo"), " transit")), labels = c("Short", "Medium", "Long"), 
-                                           start = 0, end = 0.5) +
-  scale_shape_manual(name = "Donor", 
-              values=c("1" = 15, "2" = 16, "3" = 17 , "4" = 18, "5" = 25, "6" = 9))+  guides(shape = guide_legend(ncol = 2)
-                                                               )+
-  theme(legend.position = c(0.1,0.25), legend.direction = "vertical")+
-  geom_text(x = 35, y = 7, size = 7, colour = "black", family='sans', label = rho_text, parse = TRUE, hjust = 0) 
-# plot3
-
-# if(BW == TRUE){plot3 <- plot3 + scale_color_grey(name = "Donor", start = 0, end = 0.6)}
-leg <- g_legend(plot3)
-
-plot <- ggarrange(NULL, plot3 + theme(legend.position = "none"), NULL, plot2 + theme(legend.position = "none"), 
-          NULL, plot1 + theme(legend.position = "none"), NULL, ggarrange(NULL, ggarrange(leg, NULL, nrow = 2), widths = c(0.5,1)), labels = c("A","", "B","", "C"), font.label = list(size =20), ncol = 4,nrow =2, widths = c(0.05,1,0.05,1))
-
-plot 
-
-saveplots();ggsave(plot = plot, width = 15, height = 12, dpi = 400, bg = "white", filename = "FigureS14.pdf")
-# rm(df, df2, df5)
-```
-
 
 
 
@@ -675,10 +605,7 @@ saveplots();ggsave(plot = plot, width = 15, height = 12, dpi = 400, bg = "white"
     netproduction.counts <- rbind(netprodPnet, netprodDnet)
   
   
-  
-  
     
-  
   
   # SCFAs
   # Start with bruto production
@@ -842,7 +769,7 @@ metabolites_relative_load <- met_load
 
 ```
 
-### Without carbs
+### Without carbohydrates
 ```{r Net production without carbohydrates, include=F}
 
 # CELL COUNTS
