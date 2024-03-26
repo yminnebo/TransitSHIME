@@ -80,6 +80,11 @@ lblInvivo <- "\U0001D43C\U0001D62F \U0001D637\U0001d62a\U0001D637\U0001D630"
 
 # Make supplementary figures in grey values for cheaper printing. For paper make = false
 BW = TRUE
+
+
+# create a biexponential transformation object function
+biexptrans <- flowjo_biexp(maxValue = 262144, widthBasis = -10,pos = 4.5, neg = 0)
+biexptrans_inv <- flowjo_biexp(maxValue = 262144, widthBasis = -10,pos = 4.5, neg = 0,inverse=T)
 ```
 
 ## labels
