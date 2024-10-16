@@ -4,7 +4,7 @@ Here, you will find the codebase that was used to conduct the analyses presented
 
 ## About the Paper
 
-In the paper "<b>Gut microbiota response to <i>in vitro</i> transit time variation is mediated by microbial growth rates, nutrient use efficiency and adaptation to <i>in vivo</i> transit time</b>", we attempted to investigate the effects of transit time on an <i>in vitro</i> gut microbial community. To gain a deeper understanding of the context and significance of the analyses performed here, we strongly encourage you to refer to the paper. You can access the paper via the following [Link](URL).
+In the paper "<b>Gut microbiota response to <i>in vitro</i> transit time variation is mediated by microbial growth rates, nutrient use efficiency and adaptation to <i>in vivo</i> transit time</b>", we attempted to investigate the effects of transit time on an <i>in vitro</i> gut microbial community. To gain a deeper understanding of the context and significance of the analyses performed here, we strongly encourage you to refer to the paper. You can access the paper via the following [Link](https://microbiomejournal.biomedcentral.com/articles/10.1186/s40168-023-01691-y).
 
 ### Reference
 
