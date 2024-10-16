@@ -8,7 +8,7 @@ In the paper "<b>Gut microbiota response to <i>in vitro</i> transit time variati
 
 ### Reference
 
-If you would use or build upon this code, please refer to Minnebo <i> et al.</i>, (2023) Gut microbiota response to <i>in vitro</i> transit time variation is mediated by microbial growth rates, nutrient use efficiency and adaptation to <i>in vivo</i> transit time</b>. <i>Microbiome</i> vol. X, p X-X
+If you would use or build upon this code, please refer to Minnebo <i> et al.</i>, (2023) Gut microbiota response to <i>in vitro</i> transit time variation is mediated by microbial growth rates, nutrient use efficiency and adaptation to <i>in vivo</i> transit time</b>. <i>Microbiome</i> **11**, 240
 
 ## What are the Repository contents?
 
